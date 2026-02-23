@@ -1,0 +1,35 @@
+{
+  "name": "evaluacionesdes",
+  "version": "1.0.0",
+  "description": "Sistema de Evaluación de Desempeño - Monorepo",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently -n BACKEND,FRONTEND -c \"blue.bold,green.bold\" \"npm run backend:dev\" \"npm run frontend:dev\"",
+    "dev:prod": "concurrently -n BACKEND,FRONTEND -c \"blue.bold,green.bold\" \"npm run backend:prod\" \"npm run frontend:dev\"",
+    "backend:dev": "cd backend && npm run dev",
+    "backend:prod": "cd backend && NODE_ENV=production npm start",
+    "backend:start": "cd backend && npm start",
+    "frontend:dev": "cd frontend && npm run dev",
+    "frontend:build": "cd frontend && npm run build",
+    "frontend:preview": "cd frontend && npm run preview",
+    "db:migrate": "cd backend && npm run db:migrate",
+    "db:seed": "cd backend && npm run db:seed",
+    "db:reset": "cd backend && npm run db:reset",
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install"
+  },
+  "keywords": [
+    "evaluacion",
+    "desempeño",
+    "recursos humanos",
+    "nodejs",
+    "express",
+    "postgresql",
+    "sequelize"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {},
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

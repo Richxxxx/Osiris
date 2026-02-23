@@ -1,0 +1,42 @@
+/* Tailwind CSS - Base Styles */
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+/* Estilos base personalizados */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Estilos para el contenedor principal */
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Fix para z-index de react-toastify sobre Ant Design modals */
+.Toastify__toast-container {
+  z-index: 9999 !important;
+}
+
+/* Asegurar que los modals de Ant Design no cubran los toasts */
+.ant-modal-mask {
+  z-index: 1000 !important;
+}
+
+.ant-modal-wrap {
+  z-index: 1000 !important;
+}
+
+/* Fix para dropdowns y otros elementos */
+.ant-dropdown {
+  z-index: 1050 !important;
+}
+
+.ant-select-dropdown {
+  z-index: 1050 !important;
+}

@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # Base de Datos PostgreSQL
+  postgres:
+    image: postgres:15
+    container_name: evaluaciones_db
+    environment:
+      POSTGRES_DB: EvaluacionesDesem
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Sol2025**
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/migrations:/docker-entrypoint-initdb.d
+    networks:
+      - evaluaciones_network
+
+  # Backend Node.js
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: evaluaciones_backend
+    environment:
+      NODE_ENV: production
+      PORT: 9092
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: Sol2025**
+      DB_NAME: EvaluacionesDesem
+      JWT_SECRET: CLAVE_SECRETA_SUPER_SEGURA_PARA_PRODUCCION_CAMBIAR_ESTA_CLAVE_2025
+      CLIENT_URL: http://localhost:3000
+      EMAIL_HOST: smtp.zoho.com
+      EMAIL_PORT: 587
+      EMAIL_USER: desarrollo@solucionescorp.com.co
+      EMAIL_PASS: KjwjyuCYwjuY
+      EMAIL_SECURE: false
+      EMAIL_FROM: desarrollo@solucionescorp.com.co
+      APP_EMAIL: no-reply@solucionescorp.com
+      APP_NAME: "Sistema de Evaluación de Desempeño"
+      API_URL: http://localhost:9092/api
+    ports:
+      - "9092:9092"
+    depends_on:
+      - postgres
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/config:/app/config
+    networks:
+      - evaluaciones_network
+
+  # Frontend React
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: evaluaciones_frontend
+    environment:
+      VITE_API_URL: http://localhost:9092/api
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend/src:/app/src
+    networks:
+      - evaluaciones_network
+
+volumes:
+  postgres_data:
+
+networks:
+  evaluaciones_network:
+    driver: bridge

@@ -1,0 +1,59 @@
+{
+  "development": {
+    "username": "postgres",
+    "password": "sci2020..",
+    "database": "EvaluacionesDesem",
+    "host": "localhost",
+    "port": 5432,
+    "dialect": "postgres",
+    "logging": true,
+    "dialectOptions": {
+      "ssl": false
+    },
+    "define": {
+      "timestamps": true,
+      "underscored": true,
+      "paranoid": true
+    }
+  },
+  "test": {
+    "username": "postgres",
+    "password": "sci2020..",
+    "database": "EvaluacionesDesem_test",
+    "host": "localhost",
+    "port": 5432,
+    "dialect": "postgres",
+    "logging": true,
+    "define": {
+      "timestamps": true,
+      "underscored": true,
+      "paranoid": true
+    }
+  },
+  "production": {
+    "username": "postgres",
+    "password": "sci2020..",
+    "database": "EvaluacionesDesem_prod",
+    "host": "localhost",
+    "port": 5432,
+    "dialect": "postgres",
+    "logging": false,
+    "dialectOptions": {
+      "ssl": {
+        "require": true,
+        "rejectUnauthorized": false
+      }
+    },
+    "define": {
+      "timestamps": true,
+      "underscored": true,
+      "paranoid": true
+    },
+    "pool": {
+      "max": 5,
+      "min": 0,
+      "acquire": 30000,
+      "idle": 10000
+    }
+  }
+}

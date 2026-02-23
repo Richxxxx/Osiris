@@ -1,0 +1,432 @@
+/* EvaluacionHeader.css - Estilos para el encabezado estandarizado de evaluaciones */
+
+.evaluacion-header {
+  width: 100%;
+  border: 1px solid #000;
+  margin-bottom: 20px;
+  background: white;
+  font-family: 'Arial', sans-serif;
+}
+
+/* Primera fila - Información superior */
+.header-top-row {
+  display: grid;
+  grid-template-columns: 200px 1fr 300px; /* Ancho fijo para columnas izquierda y derecha */
+  gap: 20px;
+  padding: 12px; /* Reducido padding vertical */
+  padding-left: 0; /* Sin padding izquierdo para que el recuadro pegue al borde */
+  border-bottom: 1px solid #000;
+  align-items: center;
+}
+
+/* Columna izquierda - Información de control compacta y pegada al borde */
+.header-left {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding-left: 16px; /* Padding interno mínimo para el contenido */
+  width: 200px; /* Ancho fijo */
+}
+
+.info-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px; /* Más compacto */
+  width: 100%;
+  max-width: 180px; /* Más compacto */
+  border: 1px solid #000;
+  padding: 6px; /* Padding más reducido */
+  background: #f9f9f9;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin: 0; /* Sin margen exterior */
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 6px; /* Más compacto */
+  border-bottom: 1px solid #ccc;
+  padding: 2px 4px; /* Padding ultra compacto */
+  background: white;
+}
+
+.info-item:last-child {
+  border-bottom: none;
+}
+
+.info-label {
+  font-weight: bold;
+  font-size: 10px; /* Aumentado de 9px a 10px */
+  color: #000;
+  min-width: 55px; /* Ancho mínimo reducido */
+  text-transform: uppercase;
+}
+
+.info-value {
+  font-size: 10px; /* Aumentado de 9px a 10px */
+  color: #000;
+  font-weight: 600;
+  flex: 1;
+}
+
+/* Columna central - Título principal centrado */
+.header-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.main-title {
+  margin: 0 !important;
+  font-size: 22px !important; /* Ligeramente reducido */
+  font-weight: bold !important;
+  color: #000 !important;
+  line-height: 1.1 !important; /* Más compacto */
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-align: center;
+}
+
+/* Columna derecha - Logo real más grande */
+.header-right {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  width: 300px; /* Ancho fijo */
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 100%;
+  max-width: 280px; /* Ligeramente reducido */
+}
+
+.company-logo {
+  width: 100%;
+  max-height: 70px; /* Reducido altura */
+  object-fit: contain;
+}
+
+/* Segunda fila - Información general con fondo naranja muy suave */
+.header-info-row {
+  background-color: #ff8c2e; /* Naranja más suave */
+  padding: 8px 16px; /* Reducido padding vertical */
+  border-bottom: 1px solid #000;
+}
+
+.info-general-content {
+  display: flex;
+  align-items: center;
+  gap: 20px; /* Aumentado de 12px a 20px */
+  justify-content: center;
+}
+
+.info-general-content .info-label {
+  font-weight: bold;
+  font-size: 14px; /* Aumentado de 13px a 14px */
+  color: white;
+  text-transform: uppercase;
+}
+
+.info-general-content .info-value {
+  font-size: 14px; /* Aumentado de 13px a 14px */
+  color: white;
+  font-weight: 500;
+}
+
+/* Tercera fila - Información de evaluado y evaluador sin departamento */
+.header-people-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  padding: 0;
+  border-bottom: 1px solid #000;
+}
+
+.person-section {
+  padding: 12px; /* Reducido padding */
+  border-right: 1px solid #000;
+}
+
+.person-section:last-child {
+  border-right: none;
+}
+
+.person-title {
+  font-weight: bold;
+  font-size: 14px; /* Aumentado de 13px a 14px */
+  color: #000;
+  margin-bottom: 8px; /* Reducido */
+  text-align: center;
+  text-transform: uppercase;
+  background: #f0f0f0;
+  padding: 4px 6px; /* Reducido */
+  border-radius: 4px;
+  border: 1px solid #ddd;
+}
+
+.person-info-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px; /* Reducido */
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* Reducido */
+  padding: 4px 6px; /* Reducido */
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  background: #fafafa;
+  transition: background-color 0.2s ease;
+}
+
+.info-row:hover {
+  background: #f0f8ff;
+  border-color: #d0e8ff;
+}
+
+.info-row .info-label {
+  font-weight: bold;
+  font-size: 12px; /* Aumentado de 11px a 12px */
+  color: #333;
+  min-width: 75px; /* Reducido */
+}
+
+.info-row .info-value {
+  font-size: 12px; /* Aumentado de 11px a 12px */
+  color: #000;
+  font-weight: 500;
+  flex: 1;
+}
+
+/* Cuarta fila - Sección unificada de PROCESO horizontal */
+.header-proceso-row {
+  padding: 10px 16px; /* Reducido padding vertical */
+  border-bottom: 1px solid #000;
+  background: #f8f9fa;
+}
+
+.proceso-section {
+  max-width: 600px; /* Más ancho para layout horizontal */
+  margin: 0 auto;
+  text-align: center;
+}
+
+.proceso-title {
+  font-weight: bold;
+  font-size: 14px; /* Aumentado de 13px a 14px */
+  color: #000;
+  text-transform: uppercase;
+  background: #e9ecef;
+  padding: 4px 8px; /* Reducido */
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  display: inline-block;
+  margin-right: 12px; /* Espacio entre título y valor */
+}
+
+.proceso-content {
+  display: inline-block; /* Cambiado a inline-block para layout horizontal */
+  padding: 4px 8px; /* Reducido */
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  vertical-align: middle;
+}
+
+.proceso-value {
+  font-size: 14px; /* Aumentado de 13px a 14px */
+  color: #000;
+  font-weight: 500;
+}
+
+/* Responsive para móviles */
+@media (max-width: 768px) {
+  .header-top-row {
+    grid-template-columns: 1fr;
+    gap: 10px; /* Reducido gap */
+    text-align: center;
+    align-items: center;
+    padding-left: 16px; /* Restaurar padding en móviles */
+    padding: 12px; /* Padding consistente */
+  }
+  
+  .header-left {
+    order: 2;
+    justify-content: center;
+    padding-left: 0; /* Sin padding adicional en móviles */
+    width: auto; /* Ancho automático en móviles */
+  }
+  
+  .header-center {
+    order: 1;
+  }
+  
+  .header-right {
+    order: 3;
+    justify-content: center;
+    width: auto; /* Ancho automático en móviles */
+  }
+  
+  .info-grid {
+    max-width: 180px; /* Un poco más grande en móviles */
+    margin: 0 auto;
+  }
+  
+  .main-title {
+    font-size: 16px !important; /* Reducido en móviles */
+  }
+  
+  .header-people-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .person-section {
+    border-right: none;
+    border-bottom: 1px solid #000;
+    padding: 10px; /* Reducido en móviles */
+  }
+  
+  .person-section:last-child {
+    border-bottom: none;
+  }
+  
+  .person-title {
+    text-align: left;
+  }
+  
+  .logo-container {
+    justify-content: center;
+    max-width: 180px; /* Reducido en móviles */
+  }
+
+  .proceso-section {
+    text-align: center;
+  }
+
+  .proceso-title {
+    display: block; /* Vertical en móviles */
+    margin-right: 0;
+    margin-bottom: 6px;
+  }
+
+  .proceso-content {
+    display: block; /* Vertical en móviles */
+  }
+}
+
+@media (max-width: 480px) {
+  .header-top-row {
+    padding: 10px;
+    padding-left: 10px; /* Padding consistente en móviles pequeños */
+  }
+  
+  .header-people-row {
+    padding: 0;
+  }
+  
+  .person-section {
+    padding: 8px; /* Ultra reducido en móviles pequeños */
+  }
+  
+  .main-title {
+    font-size: 14px !important;
+    letter-spacing: 1px;
+  }
+  
+  .company-logo {
+    max-height: 50px; /* Más pequeño en móviles pequeños */
+  }
+  
+  .info-general-content .info-label,
+  .info-general-content .info-value {
+    font-size: 11px;
+  }
+  
+  .person-title {
+    font-size: 11px;
+  }
+  
+  .info-row .info-label,
+  .info-row .info-value {
+    font-size: 10px;
+  }
+  
+  .info-grid {
+    gap: 2px; /* Ultra compacto en móviles pequeños */
+    padding: 4px;
+    max-width: 160px;
+  }
+  
+  .info-item {
+    padding: 1px 3px; /* Ultra compacto */
+  }
+  
+  .info-label {
+    min-width: auto;
+    font-size: 8px; /* Más pequeño en móviles */
+  }
+  
+  .info-value {
+    font-size: 8px;
+  }
+  
+  .proceso-title {
+    font-size: 11px;
+  }
+  
+  .proceso-value {
+    font-size: 11px;
+  }
+
+  .header-proceso-row {
+    padding: 8px 12px; /* Ultra reducido */
+  }
+}
+
+/* Efectos visuales adicionales */
+.evaluacion-header {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.person-section {
+  transition: background-color 0.3s ease;
+}
+
+.person-section:hover {
+  background-color: #f8f9fa;
+}
+
+/* Animaciones suaves */
+.info-item, .info-row {
+  transition: all 0.2s ease;
+}
+
+/* Mejoras de accesibilidad */
+.info-label {
+  color: #000;
+}
+
+.info-value {
+  color: #000;
+}
+
+/* Bordes y sombras definidas */
+.evaluacion-header,
+.header-top-row,
+.header-info-row,
+.header-people-row,
+.header-proceso-row,
+.person-section,
+.info-grid,
+.info-item,
+.info-row {
+  box-sizing: border-box;
+}

@@ -1,0 +1,177 @@
+/* EvaluacionModal.css - Estilos personalizados para el modal flotante */
+
+/* Contenedor principal del modal con transición instantánea */
+.evaluacion-modal .ant-modal {
+  margin: 20px;
+  max-height: calc(100vh - 40px);
+  transition: none !important;
+  animation: none !important;
+}
+
+/* Eliminar animaciones de fade */
+.evaluacion-modal.ant-modal-mask {
+  transition: none !important;
+  animation: none !important;
+}
+
+.evaluacion-modal.ant-modal-wrap {
+  transition: none !important;
+  animation: none !important;
+}
+
+/* Ajustar la posición del botón de cerrar (X) */
+.evaluacion-modal .ant-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: none !important;
+}
+
+.evaluacion-modal .ant-modal-close:hover {
+  background: rgba(0, 0, 0, 0.1);
+  transform: scale(1.1);
+  transition: none !important;
+}
+
+.evaluacion-modal .ant-modal-close-x {
+  width: 32px;
+  height: 32px;
+  line-height: 32px;
+  font-size: 16px;
+}
+
+/* Contenido del modal con scroll interno */
+.evaluacion-modal .ant-modal-body {
+  padding: 0 !important;
+  max-height: 80vh;
+  overflow: hidden;
+}
+
+.evaluacion-modal .modal-content {
+  padding: 24px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+/* Ajustes para el nuevo encabezado estandarizado */
+.evaluacion-modal .evaluacion-header {
+  margin-bottom: 20px;
+  border: 2px solid #000;
+}
+
+/* Responsive para móviles */
+@media (max-width: 768px) {
+  .evaluacion-modal .ant-modal {
+    width: 95% !important;
+    margin: 10px;
+    max-height: calc(100vh - 20px);
+  }
+  
+  .evaluacion-modal .ant-modal-close {
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+  }
+  
+  .evaluacion-modal .ant-modal-close-x {
+    width: 28px;
+    height: 28px;
+    line-height: 28px;
+    font-size: 14px;
+  }
+  
+  .evaluacion-modal .modal-content {
+    padding: 16px;
+    max-height: 75vh;
+  }
+  
+  /* Reducir espaciado en preguntas móviles */
+  .evaluacion-modal .space-y-6 > * + * {
+    margin-top: 1rem !important;
+  }
+  
+  .evaluacion-modal .border-l-4 {
+    border-left-width: 2px !important;
+  }
+  
+  .evaluacion-modal .pl-4 {
+    padding-left: 1rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .evaluacion-modal .ant-modal {
+    width: 98% !important;
+    margin: 5px;
+    max-height: calc(100vh - 10px);
+  }
+  
+  .evaluacion-modal .modal-content {
+    padding: 12px;
+    max-height: 85vh;
+  }
+  
+  /* Ajustar botones en móviles pequeños */
+  .evaluacion-modal .flex.justify-end {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .evaluacion-modal .flex.justify-end button {
+    width: 100%;
+  }
+}
+
+/* Mejorar el scroll */
+.evaluacion-modal .modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.evaluacion-modal .modal-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.evaluacion-modal .modal-content::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.evaluacion-modal .modal-content::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Asegurar que las preguntas no se corten en móviles */
+.evaluacion-modal .ant-radio-group {
+  width: 100%;
+}
+
+.evaluacion-modal .ant-radio-wrapper {
+  margin-right: 0;
+  margin-bottom: 8px;
+  display: block;
+  width: 100%;
+}
+
+/* Mejorar visibilidad de las opciones de radio */
+.evaluacion-modal .ant-radio-wrapper:hover {
+  background-color: #f5f5f5;
+  border-radius: 6px;
+  padding: 4px;
+}
+
+/* Ajustar el área de texto en móviles */
+@media (max-width: 768px) {
+  .evaluacion-modal .ant-input {
+    font-size: 16px; /* Previene zoom en iOS */
+  }
+}
