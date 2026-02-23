@@ -9,6 +9,11 @@ node_modules/
 .env.test.local
 .env.production.local
 
+# Build outputs
+dist/
+build/
+frontend/dist/
+
 # Logs
 logs
 *.log
@@ -25,17 +30,11 @@ pids
 # Coverage directory used by tools like istanbul
 coverage/
 
-# Build outputs
-dist/
-build/
-*.tgz
-
 # IDE files
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
 
 # OS generated files
 .DS_Store
@@ -48,16 +47,8 @@ Thumbs.db
 
 # Database
 *.sqlite
-*.sqlite3
+*.db
 
 # Temporary files
 *.tmp
 *.temp
-
-# Package manager lock files (keep one)
-package-lock.json
-yarn.lock
-
-# Backend specific
-uploads/
-temp/
