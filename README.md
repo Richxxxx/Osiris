@@ -1,5 +1,16 @@
 # Sistema de Evaluación de Desempeño
 
+## 🌟 Características Principales
+
+- 🏢 **Gestión de empleados** con roles y departamentos
+- 📊 **Evaluaciones trimestrales y anuales** automáticas
+- 👤 **Dashboard para empleados** con progreso en tiempo real
+- 🔍 **Panel de evaluadores** con asignaciones automáticas
+- 📧 **Sistema de notificaciones** por correo electrónico
+- 🔐 **Autenticación JWT** segura y robusta
+- 📱 **Interfaz moderna** con Ant Design y TailwindCSS
+- 🐳 **Soporte Docker** para producción
+
 ## 📁 Estructura del Proyecto
 
 ```
@@ -77,11 +88,56 @@ npm run db:reset         # Reinicia base de datos completa
 
 ## 🔧 Configuración
 
-1. Copiar `.env.example` a `.env` en backend/
-2. Configurar credenciales de base de datos
-3. Ejecutar `npm run install:all`
-4. Ejecutar `npm run db:migrate`
-5. Iniciar con `npm run dev`
+1. **Variables de entorno:**
+   ```bash
+   # Copiar archivo de ejemplo
+   cp backend/.env.example backend/.env
+   
+   # Configurar credenciales (NO usar las del ejemplo)
+   DB_HOST=localhost
+   DB_PORT=5432
+   DB_USER=tu_usuario
+   DB_PASSWORD=tu_contraseña_segura
+   DB_NAME=EvaluacionesDesem
+   JWT_SECRET=tu_clave_secreta_muy_larga_y_segura
+   ```
+
+2. **Instalación de dependencias:**
+   ```bash
+   npm run install:all  # Instala todo el proyecto
+   ```
+
+3. **Base de datos:**
+   ```bash
+   npm run db:migrate  # Crea tablas
+   npm run db:seed     # Inserta datos iniciales
+   ```
+
+4. **Iniciar desarrollo:**
+   ```bash
+   npm run dev  # Backend (5000) + Frontend (3000)
+   ```
+
+## 🎯 ¿Cómo usar el sistema?
+
+### **Para Administradores:**
+1. Ingresar como administrador
+2. Crear departamentos y roles
+3. Registrar empleados con sus fechas de ingreso
+4. Configurar formularios de evaluación
+5. Monitorear el progreso general
+
+### **Para Evaluadores:**
+1. Acceder al panel de evaluaciones
+2. Ver evaluaciones asignadas automáticamente
+3. Evaluar empleados durante las ventanas activas
+4. Generar reportes y estadísticas
+
+### **Para Empleados:**
+1. Ver dashboard personal
+2. Completar autoevaluaciones
+3. Ver historial de evaluaciones
+4. Recibir notificaciones por correo
 
 ## 🌐 Puertos
 
@@ -98,7 +154,43 @@ npm run db:reset         # Reinicia base de datos completa
 - Frontend: http://localhost:3000
 - Base de Datos: localhost:5432
 
-## 📊 Tecnologías
+## �️ Solución de Problemas Comunes
+
+### **❌ Error: "Base de datos no conecta"**
+```bash
+# Verificar que PostgreSQL esté corriendo
+pg_isready -h localhost -p 5432
+
+# Verificar credenciales en .env
+cat backend/.env
+```
+
+### **❌ Error: "Puerto en uso"**
+```bash
+# Matar procesos en puertos
+npx kill-port 5000 3000 9092
+
+# O usar otros puertos cambiando en .env
+PORT=5001
+```
+
+### **❌ Error: "Módulo no encontrado"**
+```bash
+# Reinstalar dependencias
+npm run install:all
+
+# Limpiar caché npm
+npm cache clean --force
+```
+
+### **❌ Error: "Token JWT inválido"**
+```bash
+# Verificar JWT_SECRET en .env
+# Debe ser la misma en backend y frontend
+# Reiniciar servidor después de cambiar
+```
+
+## � Tecnologías
 
 **Backend:**
 - Node.js + Express
@@ -113,3 +205,40 @@ npm run db:reset         # Reinicia base de datos completa
 - Ant Design
 - TailwindCSS
 - Axios
+
+## 🐳 Docker para Producción
+
+### **Configuración rápida:**
+```bash
+# Clonar repositorio
+git clone https://github.com/Richxxxx/Osiris.git
+cd Osiris
+
+# Configurar variables de entorno
+cp backend/.env.example backend/.env
+# EDITAR backend/.env con credenciales reales
+
+# Iniciar todos los servicios
+docker-compose up -d
+```
+
+### **Servicios incluidos:**
+- 🐘 **PostgreSQL** con persistencia de datos
+- 🚀 **Backend Node.js** en modo producción
+- 🎨 **Frontend React** servido estáticamente
+- 🔄 **Balanceo de carga** y redes internas
+
+## 📝 Notas Importantes
+
+- **⚠️ Seguridad:** Nunca subir archivos `.env` a repositorios
+- **🔐 Contraseñas:** Usar claves seguras en producción
+- **📧 Correo:** Configurar SMTP real para notificaciones
+- **🗄️ Backups:** Realizar respaldos periódicos de la base de datos
+
+---
+
+## 🚀 **Desarrollado por:**
+**Sistema de Evaluación de Desempeño v2.0**  
+*Plataforma completa para gestión de evaluaciones de personal*
+
+📧 **Soporte:** Para problemas o sugerencias, abrir issue en GitHub
