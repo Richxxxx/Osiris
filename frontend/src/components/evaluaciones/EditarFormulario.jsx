@@ -6,7 +6,7 @@ import EditarPreguntaForm from './EditarPreguntaForm';
 
 const { TextArea } = Input;
 
-const EditarFormulario = ({ visible, onClose, onSuccess, formularioId }) => {
+const EditarFormulario = ({ open, onClose, onSuccess, formularioId }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [formulario, setFormulario] = useState(null);
@@ -19,15 +19,15 @@ const EditarFormulario = ({ visible, onClose, onSuccess, formularioId }) => {
 
   // Cargar datos del formulario
   useEffect(() => {
-    if (visible && formularioId && !hasLoaded.current) {
+    if (open && formularioId && !hasLoaded.current) {
       hasLoaded.current = true;
       cargarFormulario();
     }
-  }, [visible, formularioId]);
+  }, [open, formularioId]);
 
   // Resetear estados cuando el modal se cierra
   useEffect(() => {
-    if (!visible) {
+    if (!open) {
       setFormulario(null);
       setPreguntas([]);
       setTieneComentarios(false);
@@ -36,7 +36,7 @@ const EditarFormulario = ({ visible, onClose, onSuccess, formularioId }) => {
       form.resetFields();
       setEditingQuestion(null);
     }
-  }, [visible, form]);
+  }, [open, form]);
 
   const cargarFormulario = async () => {
     try {
@@ -98,13 +98,14 @@ const EditarFormulario = ({ visible, onClose, onSuccess, formularioId }) => {
       }
 
       const response = await fetch(`/api/formularios/${formularioId}/actualizar`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${user.token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           ...values,
+          estado: values.estado === true ? 'activo' : values.estado === false ? 'inactivo' : values.estado,
           tieneComentarios
         })
       });
@@ -153,6 +154,12 @@ const EditarFormulario = ({ visible, onClose, onSuccess, formularioId }) => {
           setEditingQuestion(null);
           setActiveTab('questions');
           cargarFormulario();
+          // Limpiar campos del formulario de nueva pregunta
+          form.resetFields(['enunciado', 'tipo', 'apartado', 'obligatoria', 'opciones']);
+          // Limpiar focus para evitar warning de aria-hidden
+          if (document.activeElement && document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur();
+          }
         } else {
           const errorData = await response.json();
           message.error(`Error al actualizar pregunta: ${errorData.message || 'Error desconocido'}`);
@@ -166,7 +173,8 @@ const EditarFormulario = ({ visible, onClose, onSuccess, formularioId }) => {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            preguntas: [questionData]
+            preguntas: [questionData],
+            esActualizacionParcial: true // No eliminar otras preguntas
           })
         });
 
@@ -175,6 +183,12 @@ const EditarFormulario = ({ visible, onClose, onSuccess, formularioId }) => {
           setEditingQuestion(null);
           setActiveTab('questions');
           cargarFormulario();
+          // Limpiar campos del formulario de nueva pregunta
+          form.resetFields(['enunciado', 'tipo', 'apartado', 'obligatoria', 'opciones']);
+          // Limpiar focus para evitar warning de aria-hidden
+          if (document.activeElement && document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur();
+          }
         } else {
           const errorData = await response.json();
           message.error(`Error al agregar pregunta: ${errorData.message || 'Error desconocido'}`);
@@ -198,13 +212,14 @@ const EditarFormulario = ({ visible, onClose, onSuccess, formularioId }) => {
       const preguntasActuales = preguntas.filter(p => p.id !== questionId);
       
       const response = await fetch(`/api/formularios/${formularioId}/actualizar`, {
-        method: 'PATCH', // Usar PATCH como la ruta
+        method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${user.token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          preguntas: preguntasActuales
+          preguntas: preguntasActuales,
+          esActualizacionParcial: true // No eliminar otras preguntas no incluidas
         })
       });
 
@@ -576,6 +591,12 @@ const EditarFormulario = ({ visible, onClose, onSuccess, formularioId }) => {
           onCancel={() => {
             setEditingQuestion(null);
             setActiveTab('questions'); // Volver al tab de preguntas
+            // Limpiar campos del formulario de nueva pregunta
+            form.resetFields(['enunciado', 'tipo', 'apartado', 'obligatoria', 'opciones']);
+            // Limpiar focus para evitar warning de aria-hidden
+            if (document.activeElement && document.activeElement instanceof HTMLElement) {
+              document.activeElement.blur();
+            }
           }}
           periodicidad={periodicidad}
           setEditingQuestion={setEditingQuestion}
@@ -587,7 +608,7 @@ const EditarFormulario = ({ visible, onClose, onSuccess, formularioId }) => {
   return (
     <Modal
       title="Editar Formulario"
-      open={visible}
+      open={open}
       onCancel={onClose}
       width={900}
       footer={[

@@ -80,6 +80,7 @@ app.use((req, res, next) => {
 app.use('/api/auth', require('./routes/auth.routes'));
 app.use('/api/usuarios', require('./routes/usuario.routes'));
 app.use('/api/departamentos', require('./routes/departamento.routes'));
+app.use('/api/empresas', require('./routes/empresa.routes'));
 app.use('/api/evaluaciones', require('./routes/evaluacion.routes').router);
 app.use('/api/evaluaciones-public', require('./routes/evaluacion.routes').publicRouter);
 app.use('/api/formularios', require('./routes/formulario.routes'));

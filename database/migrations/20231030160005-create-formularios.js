@@ -49,7 +49,18 @@ module.exports = {
         },
         comment: 'Distribución de peso por apartado (debe sumar 1). Null para formularios trimestrales'
       },
-      
+            empresa_id: {
+        type: Sequelize.INTEGER,
+        allowNull: true, // Permitir NULL para compatibilidad con datos existentes
+        references: {
+          model: 'empresas',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'RESTRICT',
+        comment: 'Empresa a la que pertenece el formulario (principalmente para trimestrales)'
+      },
+
       // Campos de fechas
       fecha_inicio: {
         type: Sequelize.DATEONLY,

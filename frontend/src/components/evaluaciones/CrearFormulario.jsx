@@ -24,17 +24,18 @@ import {
 import { crearFormulario, obtenerPreguntasExistentes } from '../../services/formularioService';
 import { obtenerDepartamentos, obtenerCargosPorDepartamento } from '../../services/departamentoService';
 import { obtenerCargos } from '../../services/cargoService';
+import { obtenerEmpresas } from '../../services/empresaService';
 
-const { TabPane } = Tabs;
 const { TextArea } = Input;
 const { Option } = Select;
 
-const CrearFormulario = ({ visible, onClose, onSuccess }) => {
+const CrearFormulario = ({ open, onClose, onSuccess }) => {
   const [form] = Form.useForm();
   const [activeTab, setActiveTab] = useState('competencias');
   const [departamentos, setDepartamentos] = useState([]);
   const [cargos, setCargos] = useState([]);
   const [cargoSeleccionado, setCargoSeleccionado] = useState(null);
+  const [empresas, setEmpresas] = useState([]);
   const [loading, setLoading] = useState(false);
   const [periodicidad, setPeriodicidad] = useState('trimestral');
   
@@ -67,7 +68,8 @@ const CrearFormulario = ({ visible, onClose, onSuccess }) => {
   const [tieneComentarios, setTieneComentarios] = useState(true);
 
   useEffect(() => {
-    if (visible) {
+    if (open) {
+      cargarEmpresas();
       cargarDepartamentos();
       form.resetFields();
       setCargoSeleccionado(null);
@@ -77,20 +79,32 @@ const CrearFormulario = ({ visible, onClose, onSuccess }) => {
         convivencia: [],
         desempeno: []
       });
-      setPreguntasExistentes({
-        competencias: [],
-        experiencia: [],
-        convivencia: [],
-        desempeno: []
-      });
-      setPreguntasSeleccionadas(new Set());
+      setSeccionesTrimestral([]);
       setTieneComentarios(true); // Mantener activado por defecto al resetear
     }
-  }, [visible, form]);
+  }, [open, form]);
 
-  const cargarDepartamentos = async () => {
+  const cargarEmpresas = async () => {
     try {
-      const data = await obtenerDepartamentos();
+      const data = await obtenerEmpresas();
+      setEmpresas(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('Error al cargar empresas:', error);
+      message.error('Error al cargar la lista de empresas');
+      setEmpresas([]);
+    }
+  };
+
+  const handleEmpresaChange = async (empresaId) => {
+    form.setFieldsValue({ departamento_id: undefined });
+    setCargos([]);
+    setCargoSeleccionado(null);
+    await cargarDepartamentos(empresaId);
+  };
+
+  const cargarDepartamentos = async (empresaId = null) => {
+    try {
+      const data = await obtenerDepartamentos(empresaId);
       setDepartamentos(Array.isArray(data) ? data : []);
       setCargos([]); // No cargar cargos hasta que se seleccione un departamento
     } catch (error) {
@@ -310,7 +324,9 @@ const CrearFormulario = ({ visible, onClose, onSuccess }) => {
 
       if (periodicidad === 'anual') {
         // Lógica para formulario anual
+        // Enviar cargo_id y empresa_id
         formulario.cargo_id = cargoSeleccionado.id;
+        formulario.empresa_id = values.empresa_id; // Enviar empresa_id seleccionada
         
         // Combinar todas las preguntas de los diferentes apartados
         formulario.preguntas = [
@@ -377,7 +393,10 @@ const CrearFormulario = ({ visible, onClose, onSuccess }) => {
         }
       } else {
         // Lógica para formulario trimestral
-        // No se envía cargo_id
+        // No se envía cargo_id, pero sí empresa_id
+        
+        // Agregar empresa_id del formulario
+        formulario.empresa_id = values.empresa_id;
         
         // Construir preguntas en el orden correcto: título -> preguntas -> título -> preguntas
         seccionesTrimestral.forEach(seccion => {
@@ -677,7 +696,7 @@ const CrearFormulario = ({ visible, onClose, onSuccess }) => {
           )}
         </div>
       }
-      visible={previewVisible}
+      open={previewVisible}
       onCancel={() => setPreviewVisible(false)}
       footer={[
         <Button key="close" onClick={() => setPreviewVisible(false)}>
@@ -837,11 +856,11 @@ const CrearFormulario = ({ visible, onClose, onSuccess }) => {
 
   return (
     <Modal
-      visible={visible}
+      open={open}
       onCancel={onClose}
       footer={null}
       width={1000}
-      destroyOnClose
+      destroyOnHidden
     >
       <Form
         form={form}
@@ -882,9 +901,11 @@ const CrearFormulario = ({ visible, onClose, onSuccess }) => {
                   setPeriodicidad(value);
                   const periodicidadText = value === 'anual' ? 'ANUAL' : 'TRIMESTRAL';
                   form.setFieldsValue({
-                    nombre: 'EVALUACIÓN DESEMPEÑO LABORAL PERÍODO DE PRUEBA',
+                    nombre: value === 'anual' 
+                      ? 'EVALUACIÓN ANUAL DE DESEMPEÑO LABORAL'
+                      : 'EVALUACIÓN DESEMPEÑO LABORAL PERÍODO DE PRUEBA',
                     descripcion: value === 'anual' 
-                      ? 'Evaluación anual de desempeño con cálculo por apartados.'
+                      ? 'Formulario anual con cálculo por apartados.'
                       : 'Formulario trimestral de evaluación de desempeño.'
                   });
                 }}
@@ -927,7 +948,30 @@ const CrearFormulario = ({ visible, onClose, onSuccess }) => {
           >
             {/* Sección de selección de departamento y cargo */}
             <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start', marginBottom: '24px' }}>
-              <div style={{ flex: 1 }}>
+              {/* Campo de empresa solo para formularios anuales - al lado izquierdo */}
+              {periodicidad === 'anual' && (
+                <div style={{ flex: 1 }}>
+                  <Form.Item
+                    name="empresa_id"
+                    label="Empresa"
+                    rules={[{ required: true, message: 'Seleccione una empresa' }]}
+                  >
+                    <Select
+                      placeholder="Seleccione una empresa"
+                      onChange={handleEmpresaChange}
+                      allowClear
+                    >
+                      {empresas.map(empresa => (
+                        <Option key={empresa.id} value={empresa.id}>
+                          {empresa.nombre}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </div>
+              )}
+              
+              <div style={{ flex: periodicidad === 'anual' ? 1 : 2 }}>
                 <Form.Item
                   name="departamento_id"
                   label="Departamento/Proceso"
@@ -937,6 +981,7 @@ const CrearFormulario = ({ visible, onClose, onSuccess }) => {
                     placeholder="Seleccione un departamento"
                     onChange={handleDepartamentoChange}
                     allowClear
+                    disabled={periodicidad === 'anual' && !form.getFieldValue('empresa_id')}
                   >
                     {departamentos.map(depto => (
                       <Option key={depto.id} value={depto.id}>
@@ -946,6 +991,7 @@ const CrearFormulario = ({ visible, onClose, onSuccess }) => {
                   </Select>
                 </Form.Item>
               </div>
+              
               <div style={{ flex: 1 }}>
                 <Form.Item
                   name="cargo_id"
@@ -968,115 +1014,106 @@ const CrearFormulario = ({ visible, onClose, onSuccess }) => {
               </div>
             </div>
 
-            <Tabs activeKey={activeTab} onChange={setActiveTab}>
-              {['competencias', 'experiencia', 'convivencia', 'desempeno'].map(apartado => (
-                <TabPane tab={getTituloApartado(apartado)} key={apartado}>
-                  {renderEditorPregunta()}
-                  
-                  {/* Sección de preguntas existentes para reutilizar */}
-                  {cargoSeleccionado && (
-                    <Card 
-                      title={`Preguntas existentes de ${getTituloApartado(apartado)}`} 
-                      style={{ marginBottom: 16 }}
-                      size="small"
-                      extra={
-                        <Button 
-                          type="primary" 
-                          size="small"
-                          onClick={reutilizarPreguntasSeleccionadas}
-                          disabled={preguntasSeleccionadas.size === 0}
-                        >
-                          Reutilizar seleccionadas ({preguntasSeleccionadas.size})
-                        </Button>
-                      }
-                    >
-                      {loadingPreguntas ? (
-                        <div style={{ textAlign: 'center', padding: '20px' }}>
-                          Cargando preguntas existentes...
-                        </div>
-                      ) : preguntasExistentes[apartado]?.length > 0 ? (
-                        <List
-                          itemLayout="horizontal"
-                          dataSource={preguntasExistentes[apartado]}
-                          renderItem={(pregunta) => (
-                            <List.Item>
-                              <List.Item.Meta
-                                avatar={
+            <Tabs 
+              activeKey={activeTab} 
+              onChange={setActiveTab}
+              items={['competencias', 'experiencia', 'convivencia', 'desempeno'].map(apartado => ({
+                key: apartado,
+                label: getTituloApartado(apartado),
+                children: (
+                  <>
+                    {renderEditorPregunta()}
+                    
+                    {/* Sección de preguntas existentes para reutilizar */}
+                    {cargoSeleccionado && (
+                      <Card 
+                        title={`Preguntas existentes de ${getTituloApartado(apartado)}`} 
+                        style={{ marginBottom: 16 }}
+                        size="small"
+                      >
+                        {loadingPreguntas ? (
+                          <div style={{ textAlign: 'center', padding: '20px' }}>
+                            <div>Cargando preguntas existentes...</div>
+                          </div>
+                        ) : (
+                          <List
+                            dataSource={preguntasExistentes[apartado]}
+                            renderItem={(pregunta) => (
+                              <List.Item
+                                actions={[
                                   <input
                                     type="checkbox"
                                     checked={preguntasSeleccionadas.has(pregunta.id)}
                                     onChange={(e) => handlePreguntaExistenteChange(pregunta.id, e.target.checked)}
                                   />
-                                }
-                                title={
-                                  <span>
-                                    {pregunta.enunciado}
-                                    {pregunta.cargos && pregunta.cargos.length > 0 && (
-                                      <Tag color="blue" style={{ marginLeft: 8 }}>
-                                        Usada en: {pregunta.cargos.map(c => c.nombre).join(', ')}
-                                      </Tag>
-                                    )}
-                                  </span>
-                                }
-                                description={
-                                  <div>
-                                    <p><strong>Tipo:</strong> Opción múltiple</p>
-                                    {pregunta.opciones && pregunta.opciones.length > 0 && (
-                                      <p><strong>Opciones:</strong> {pregunta.opciones.map(o => `${o.valor} (${o.puntuacion} pts)`).join(', ')}</p>
-                                    )}
-                                  </div>
-                                }
-                              />
-                            </List.Item>
-                          )}
-                        />
-                      ) : (
-                        <div style={{ textAlign: 'center', color: '#999', padding: '20px' }}>
-                          No hay preguntas existentes para reutilizar en este apartado
-                        </div>
-                      )}
-                    </Card>
-                  )}
-                  
-                  <h3>Preguntas de {getTituloApartado(apartado)}</h3>
-                  
-                  <List
-                    itemLayout="horizontal"
-                    dataSource={preguntas[apartado]}
-                    renderItem={(pregunta, index) => (
-                      <List.Item
-                        actions={[
-                          <Button 
-                            type="text" 
-                            icon={<DeleteOutlined />} 
-                            onClick={() => eliminarPregunta(index)}
-                            danger
+                                ]}
+                              >
+                                <List.Item.Meta
+                                  title={pregunta.enunciado}
+                                  description={`Tipo: ${pregunta.tipo || 'texto'} | Obligatoria: ${pregunta.obligatoria ? 'Sí' : 'No'}`}
+                                />
+                              </List.Item>
+                            )}
                           />
-                        ]}
-                      >
-                        <List.Item.Meta
-                          title={
-                            <span>
-                              {pregunta.enunciado} 
-                              {pregunta.obligatoria && <Tag color="red" style={{ marginLeft: 8 }}>Obligatoria</Tag>}
-                            </span>
-                          }
-                          description={
-                            <div>
-                              <p><strong>Tipo:</strong> Opción múltiple</p>
-                              {pregunta.opciones && pregunta.opciones.length > 0 && (
-                                <p><strong>Opciones:</strong> {pregunta.opciones.map(o => `${o.texto} (${o.puntaje} pts)`).join(', ')}</p>
-                              )}
-                              <p><strong>Aplica a:</strong> {cargoSeleccionado?.nombre || 'Cargo seleccionado'}</p>
-                            </div>
-                          }
-                        />
-                      </List.Item>
+                        )}
+                        
+                        {preguntasSeleccionadas.size > 0 && (
+                          <div style={{ marginTop: 16, textAlign: 'right' }}>
+                            <Space>
+                              <span>{preguntasSeleccionadas.size} pregunta(s) seleccionada(s)</span>
+                              <Button 
+                                type="primary" 
+                                size="small"
+                                onClick={reutilizarPreguntasSeleccionadas}
+                              >
+                                Reutilizar Seleccionadas
+                              </Button>
+                            </Space>
+                          </div>
+                        )}
+                      </Card>
                     )}
-                  />
-                </TabPane>
-              ))}
-            </Tabs>
+                    
+                    <h3>Preguntas de {getTituloApartado(apartado)}</h3>
+                    
+                    <List
+                      itemLayout="horizontal"
+                      dataSource={preguntas[apartado]}
+                      renderItem={(pregunta, index) => (
+                        <List.Item
+                          actions={[
+                            <Button 
+                              type="text" 
+                              icon={<DeleteOutlined />} 
+                              onClick={() => eliminarPregunta(index)}
+                              danger
+                            />
+                          ]}
+                        >
+                          <List.Item.Meta
+                            title={
+                              <span>
+                                {pregunta.enunciado} 
+                                {pregunta.obligatoria && <Tag color="red" style={{ marginLeft: 8 }}>Obligatoria</Tag>}
+                              </span>
+                            }
+                            description={
+                              <div>
+                                <p><strong>Tipo:</strong> Opción múltiple</p>
+                                {pregunta.opciones && pregunta.opciones.length > 0 && (
+                                  <p><strong>Opciones:</strong> {pregunta.opciones.map(o => `${o.texto} (${o.puntaje} pts)`).join(', ')}</p>
+                                )}
+                                <p><strong>Aplica a:</strong> {cargoSeleccionado?.nombre || 'Cargo seleccionado'}</p>
+                              </div>
+                            }
+                          />
+                        </List.Item>
+                      )}
+                    />
+                  </>
+                )
+              }))}
+            />
           </Card>
         ) : (
           /* Formulario Trimestral */
@@ -1085,6 +1122,25 @@ const CrearFormulario = ({ visible, onClose, onSuccess }) => {
             style={{ marginBottom: 24 }}
             size="small"
           >
+            {/* Selector de empresa para formularios trimestrales */}
+            <div style={{ marginBottom: 16 }}>
+              <Form.Item
+                name="empresa_id"
+                label="Empresa"
+                rules={[{ required: true, message: 'Seleccione una empresa' }]}
+              >
+                <Select
+                  placeholder="Seleccione una empresa"
+                  allowClear
+                >
+                  {empresas.map(empresa => (
+                    <Option key={empresa.id} value={empresa.id}>
+                      {empresa.nombre}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </div>
 
             {/* Sección para crear secciones */}
             <Card 

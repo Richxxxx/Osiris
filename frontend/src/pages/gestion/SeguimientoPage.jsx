@@ -1,28 +1,24 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 
 import { 
-
   Users, 
-
-  CheckCircle, 
-
-  AlertCircle, 
-
-  Clock,
-
-  Eye,
-
-  TrendingUp,
-
+  ChevronDown, 
+  ChevronRight, 
+  Search, 
+  Filter,
+  BarChart,
+  Star,
   Calendar,
-
+  Clock,
+  Eye,
+  TrendingUp,
   FileText,
-
-  ChevronDown
-
+  AlertCircle,
+  CheckCircle
 } from 'lucide-react';
 
 import { obtenerSeguimientoPorDepartamento, obtenerDetalleEvaluacionesLider, obtenerEvaluacionesPorLider } from '../../services/gestionService';
+import { obtenerEmpresas } from '../../services/empresaService';
 
 import HeaderGestion from '../../components/gestion/Header';
 
@@ -156,6 +152,10 @@ const SeguimientoPage = () => {
 
   const [evaluacionSeleccionadaId, setEvaluacionSeleccionadaId] = useState(null);
 
+  // Company filter states
+  const [empresas, setEmpresas] = useState([]);
+  const [selectedEmpresa, setSelectedEmpresa] = useState('todos');
+  const [isEmpresaDropdownOpen, setIsEmpresaDropdownOpen] = useState(false);
 
 
   // Para el resaltado temporal del departamento
@@ -195,9 +195,8 @@ const SeguimientoPage = () => {
   useEffect(() => {
 
     // Actualizar la lista de periodos cuando se monta el componente
-
     setPeriodsList(generatePeriodsList());
-
+    fetchEmpresas();
     fetchSeguimiento();
 
     
@@ -298,7 +297,7 @@ const SeguimientoPage = () => {
 
     }
 
-  }, [selectedPeriodo, searchParams]);
+  }, [selectedPeriodo, selectedEmpresa, searchParams]);
 
 
 
@@ -308,10 +307,8 @@ const SeguimientoPage = () => {
 
       setLoading(true);
 
-      const data = await obtenerSeguimientoPorDepartamento(selectedPeriodo);
-
+      const data = await obtenerSeguimientoPorDepartamento(selectedPeriodo, selectedEmpresa);
       
-
       // CORRECCIÓN: Usar datos directamente si vienen como array
 
       const datosSeguimiento = data?.seguimiento || data || [];
@@ -332,6 +329,21 @@ const SeguimientoPage = () => {
 
   };
 
+  const fetchEmpresas = async () => {
+
+    try {
+
+      const empresasData = await obtenerEmpresas();
+
+      setEmpresas(empresasData);
+
+    } catch (err) {
+
+      console.error('Error al cargar empresas:', err);
+
+    }
+
+  };
 
 
   // Skeleton loader para la tabla de seguimiento
@@ -450,6 +462,14 @@ const SeguimientoPage = () => {
 
 
 
+  const handleEmpresaSelect = (empresaId) => {
+
+    setSelectedEmpresa(empresaId);
+
+    setIsEmpresaDropdownOpen(false);
+
+  };
+
   const handlePeriodoSelect = (periodo) => {
 
     setSelectedPeriodo(periodo);
@@ -457,7 +477,6 @@ const SeguimientoPage = () => {
     setIsPeriodoDropdownOpen(false);
 
   };
-
 
 
   const handleCustomPeriodoSubmit = () => {
@@ -636,152 +655,128 @@ const SeguimientoPage = () => {
 
           <div className="p-4 lg:p-6">
 
-            {/* Header con selector de periodo */}
-
+            {/* Header con filtros */}
             <div className="mb-8">
-
               <div className="flex items-center justify-between">
-
                 <div>
-
                   <h1 className="text-3xl font-bold text-gray-900">Seguimiento de Evaluaciones</h1>
-
                   <p className="mt-2 text-gray-600">
-
                     Monitoreo del progreso de evaluaciones por departamento y líder
-
                   </p>
-
                 </div>
 
-                
-
-                {/* Selector de periodo */}
-
-                <div className="relative">
-
-                  <div className="flex items-center space-x-2">
-
-                    <span className="text-sm text-gray-600">Periodo:</span>
-
-                    <button
-
-                      onClick={() => setIsPeriodoDropdownOpen(!isPeriodoDropdownOpen)}
-
-                      className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-
-                    >
-
-                      {periodsList.find(p => p.value === selectedPeriodo)?.label || selectedPeriodo}
-
-                      <ChevronDown className="ml-2 h-4 w-4" />
-
-                    </button>
-
+                {/* Filtros */}
+                <div className="flex items-center space-x-3">
+                  {/* Selector de empresa */}
+                  <div className="relative">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-gray-600">Empresa:</span>
+                      <button
+                        onClick={() => setIsEmpresaDropdownOpen(!isEmpresaDropdownOpen)}
+                        className="flex items-center px-3 py-2 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 max-w-40"
+                      >
+                        <span className="truncate">
+                          {selectedEmpresa === 'todos' 
+                            ? 'Todas' 
+                            : empresas.find(e => e.id === selectedEmpresa)?.nombre || 'Seleccionar'
+                          }
+                        </span>
+                        <ChevronDown className="ml-2 h-4 w-4 flex-shrink-0" />
+                      </button>
+                    </div>
+                    
+                    {isEmpresaDropdownOpen && (
+                      <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
+                        <div className="max-h-60 overflow-y-auto">
+                          <button
+                            onClick={() => handleEmpresaSelect('todos')}
+                            className={`w-full text-left px-4 py-2 hover:bg-gray-100 ${
+                              selectedEmpresa === 'todos' ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                            }`}
+                          >
+                            Todas las empresas
+                          </button>
+                          {empresas.map((empresa) => (
+                            <button
+                              key={empresa.id}
+                              onClick={() => handleEmpresaSelect(empresa.id)}
+                              className={`w-full text-left px-4 py-2 hover:bg-gray-100 ${
+                                selectedEmpresa === empresa.id ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                              }`}
+                              title={empresa.nombre}
+                            >
+                              <span className="truncate block">{empresa.nombre}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
-                  
-
-                  {isPeriodoDropdownOpen && (
-
-                    <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
-
-                      <div className="max-h-60 overflow-y-auto">
-
-                        {periodsList.map((period) => (
-
-                          <button
-
-                            key={period.value}
-
-                            onClick={() => handlePeriodoSelect(period.value)}
-
-                            className={`w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center justify-between ${
-
-                              period.value === selectedPeriodo ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
-
-                            }`}
-
-                          >
-
-                            <span>{period.label}</span>
-
-                            {period.isCurrent && (
-
-                              <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded">Actual</span>
-
-                            )}
-
-                          </button>
-
-                        ))}
-
-                        
-
-                        <div className="border-t border-gray-200 p-2">
-
-                          <button
-
-                            onClick={() => setShowCustomInput(!showCustomInput)}
-
-                            className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded"
-
-                          >
-
-                            Personalizado...
-
-                          </button>
-
-                          
-
-                          {showCustomInput && (
-
-                            <div className="mt-2 flex space-x-2">
-
-                              <input
-
-                                type="text"
-
-                                value={customPeriodo}
-
-                                onChange={(e) => setCustomPeriodo(e.target.value)}
-
-                                placeholder="Ej: 2024-Q3"
-
-                                className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-
-                                onKeyPress={(e) => e.key === 'Enter' && handleCustomPeriodoSubmit()}
-
-                              />
-
-                              <button
-
-                                onClick={handleCustomPeriodoSubmit}
-
-                                className="px-3 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
-
-                              >
-
-                                OK
-
-                              </button>
-
-                            </div>
-
-                          )}
-
-                        </div>
-
-                      </div>
-
+                  {/* Selector de periodo */}
+                  <div className="relative">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-gray-600">Periodo:</span>
+                      <button
+                        onClick={() => setIsPeriodoDropdownOpen(!isPeriodoDropdownOpen)}
+                        className="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        {periodsList.find(p => p.value === selectedPeriodo)?.label || selectedPeriodo}
+                        <ChevronDown className="ml-2 h-4 w-4" />
+                      </button>
                     </div>
-
-                  )}
-
+                    
+                    {isPeriodoDropdownOpen && (
+                      <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
+                        <div className="max-h-60 overflow-y-auto">
+                          {periodsList.map((period) => (
+                            <button
+                              key={period.value}
+                              onClick={() => handlePeriodoSelect(period.value)}
+                              className={`w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center justify-between ${
+                                period.value === selectedPeriodo ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                              }`}
+                            >
+                              <span>{period.label}</span>
+                              {period.isCurrent && (
+                                <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded">Actual</span>
+                              )}
+                            </button>
+                          ))}
+                          
+                          <div className="border-t border-gray-200 p-2">
+                            <button
+                              onClick={() => setShowCustomInput(!showCustomInput)}
+                              className="w-full text-left px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded"
+                            >
+                              Personalizado...
+                            </button>
+                            
+                            {showCustomInput && (
+                              <div className="mt-2 flex space-x-2">
+                                <input
+                                  type="text"
+                                  value={customPeriodo}
+                                  onChange={(e) => setCustomPeriodo(e.target.value)}
+                                  placeholder="Ej: 2024-Q3"
+                                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  onKeyPress={(e) => e.key === 'Enter' && handleCustomPeriodoSubmit()}
+                                />
+                                <button
+                                  onClick={handleCustomPeriodoSubmit}
+                                  className="px-3 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
+                                >
+                                  OK
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-
               </div>
-
             </div>
 
 
@@ -829,26 +824,6 @@ const SeguimientoPage = () => {
                           {depto.departamento?.descripcion || depto.descripcion}
 
                         </p>
-
-                      </div>
-
-                      <div className="flex items-center space-x-4">
-
-                        <div className="text-center">
-
-                          <p className="text-xl font-bold text-gray-900 leading-tight">
-
-                            {depto.stats && depto.stats.totalEvaluaciones > 0 
-
-                              ? Math.round((depto.stats.completadas / depto.stats.totalEvaluaciones) * 100) 
-
-                              : 0}%
-
-                          </p>
-
-                          <p className="text-xs text-gray-600 leading-tight">Completitud</p>
-
-                        </div>
 
                       </div>
 
@@ -954,22 +929,44 @@ const SeguimientoPage = () => {
 
                                 <div className="p-2">
 
-                                  {/* Encabezado compacto */}
-
-                                  <div className="grid grid-cols-6 gap-1 mb-1 px-2 py-1 bg-gray-50 rounded text-xs font-medium text-gray-700">
-
-                                    <div className="col-span-1">Empleado</div>
-
-                                    <div className="col-span-1 text-center">Puntuación</div>
-
-                                    <div className="col-span-1 text-center">Valoración</div>
-
-                                    <div className="col-span-1 text-center">Periodicidad</div>
-
-                                    <div className="col-span-1 text-center">Finalización</div>
-
-                                    <div className="col-span-1 text-center">Acciones</div>
-
+                                  {/* Encabezado mejorado y uniforme */}
+                                  <div className="grid grid-cols-6 gap-2 mb-2 px-3 py-2 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border border-gray-200">
+                                    <div className="col-span-1">
+                                      <span className="text-xs font-semibold text-gray-700 flex items-center">
+                                        <Users className="h-3 w-3 mr-1" />
+                                        Empleado
+                                      </span>
+                                    </div>
+                                    <div className="col-span-1 text-center">
+                                      <span className="text-xs font-semibold text-gray-700 flex items-center justify-center">
+                                        <BarChart className="h-3 w-3 mr-1" />
+                                        Puntuación
+                                      </span>
+                                    </div>
+                                    <div className="col-span-1 text-center">
+                                      <span className="text-xs font-semibold text-gray-700 flex items-center justify-center">
+                                        <Star className="h-3 w-3 mr-1" />
+                                        Valoración
+                                      </span>
+                                    </div>
+                                    <div className="col-span-1 text-center">
+                                      <span className="text-xs font-semibold text-gray-700 flex items-center justify-center">
+                                        <Calendar className="h-3 w-3 mr-1" />
+                                        Periodicidad
+                                      </span>
+                                    </div>
+                                    <div className="col-span-1 text-center">
+                                      <span className="text-xs font-semibold text-gray-700 flex items-center justify-center">
+                                        <Clock className="h-3 w-3 mr-1" />
+                                        Finalización
+                                      </span>
+                                    </div>
+                                    <div className="col-span-1 text-center">
+                                      <span className="text-xs font-semibold text-gray-700 flex items-center justify-center">
+                                        <Eye className="h-3 w-3 mr-1" />
+                                        Acciones
+                                      </span>
+                                    </div>
                                   </div>
 
                                   
@@ -980,149 +977,109 @@ const SeguimientoPage = () => {
 
                                       return (
 
-                                      <div key={evaluacion.id || `temp-${evaluacion.evaluado?.id}-${index}`} className="grid grid-cols-6 gap-1 py-2 px-2 hover:bg-gray-50 rounded transition-colors">
-
-                                        {/* Columna 1: Empleado - Compacto */}
-
+                                      <div key={evaluacion.id || `temp-${evaluacion.evaluado?.id}-${index}`} className="grid grid-cols-6 gap-2 py-3 px-3 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 rounded-lg transition-all duration-200 border border-transparent hover:border-gray-200">
+                                        {/* Columna 1: Empleado - Limpio */}
                                         <div className="col-span-1">
-
                                           <div className="text-sm font-medium text-gray-900 truncate">
-
                                             {evaluacion.evaluado?.nombre} {evaluacion.evaluado?.apellido || ''}
-
                                           </div>
-
                                           <div className="text-xs text-gray-500 truncate">
-
                                             {evaluacion.evaluado?.cargo?.nombre || 'Sin cargo'}
-
                                           </div>
-
                                         </div>
 
                                         
-
-                                        {/* Columna 2: Puntuación - Destacado compacto */}
-
+                                        {/* Columna 2: Puntuación - Sin iconos */}
                                         <div className="col-span-1 text-center flex items-center justify-center">
-
                                           {evaluacion.estado === 'completada' && evaluacion.puntuacion ? (
-
-                                            <span className="text-sm font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
-
+                                            <span className="text-sm font-bold text-blue-700 bg-blue-50 px-2 py-1 rounded-full border border-blue-200">
                                               {evaluacion.puntuacion}
-
                                             </span>
-
                                           ) : (
-
                                             <span className="text-sm text-gray-400">-</span>
-
                                           )}
-
                                         </div>
 
                                         
 
-                                        {/* Columna 3: Valoración - Destacado compacto */}
-
+                                        {/* Columna 3: Valoración - Sin iconos */}
                                         <div className="col-span-1 text-center flex items-center justify-center">
-
                                           {evaluacion.estado === 'completada' && evaluacion.valoracion ? (
-
-                                            <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${
-
-                                              evaluacion.valoracion === 'DESTACADO' || evaluacion.valoracion === 'EXCELENTE' ? 'bg-green-100 text-green-800 border border-green-200' :
-
-                                              evaluacion.valoracion === 'BUENO' || evaluacion.valoracion === 'SOBRESALIENTE' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
-
-                                              evaluacion.valoracion === 'ACEPTABLE' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' :
-
-                                              evaluacion.valoracion === 'BAJO' || evaluacion.valoracion === 'DEFICIENTE' ? 'bg-red-100 text-red-800 border border-red-200' :
-
-                                              'bg-gray-100 text-gray-800 border border-gray-200'
-
+                                            <span className={`px-2 py-1 text-xs font-bold rounded-full border ${
+                                              evaluacion.valoracion === 'DESTACADO' || evaluacion.valoracion === 'EXCELENTE' ? 'bg-green-100 text-green-800 border-green-200' :
+                                              evaluacion.valoracion === 'BUENO' || evaluacion.valoracion === 'SOBRESALIENTE' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                                              evaluacion.valoracion === 'ACEPTABLE' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
+                                              evaluacion.valoracion === 'BAJO' || evaluacion.valoracion === 'DEFICIENTE' ? 'bg-red-100 text-red-800 border-red-200' :
+                                              'bg-gray-100 text-gray-800 border-gray-200'
                                             }`}>
-
                                               {evaluacion.valoracion}
-
                                             </span>
-
                                           ) : evaluacion.id ? (
-
-                                            <span className="px-2 py-0.5 text-xs bg-yellow-50 text-yellow-700 rounded-full border border-yellow-200">
-
+                                            <span className="px-2 py-1 text-xs bg-yellow-50 text-yellow-700 rounded-full border border-yellow-200">
                                               Pendiente
-
                                             </span>
-
                                           ) : (
-
-                                            <span className="px-2 py-0.5 text-xs bg-gray-50 text-gray-500 rounded-full border border-gray-200">
-
+                                            <span className="px-2 py-1 text-xs bg-gray-50 text-gray-500 rounded-full border border-gray-200">
                                               Sin evaluación
-
                                             </span>
-
                                           )}
-
                                         </div>
 
                                         
 
-                                        {/* Columna 4: Periodicidad - Destacado compacto */}
-
+                                        {/* Columna 4: Periodicidad - Sin iconos */}
                                         <div className="col-span-1 text-center flex items-center justify-center">
-
-                                          <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-
-                                            evaluacion.periodicidad === 'trimestral' ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-indigo-100 text-indigo-800 border border-indigo-200'
-
+                                          <span className={`px-2 py-1 text-xs font-medium rounded-full border ${
+                                            evaluacion.periodicidad === 'trimestral' ? 'bg-purple-100 text-purple-800 border-purple-200' : 'bg-indigo-100 text-indigo-800 border-indigo-200'
                                           }`}>
-
                                             {evaluacion.periodicidad}
-
                                           </span>
-
                                         </div>
 
                                         
 
-                                        {/* Columna 5: Finalización - Como antes */}
-
+                                        {/* Columna 5: Finalización - Sin iconos */}
                                         <div className="col-span-1 text-center flex items-center justify-center">
-
                                           {evaluacion.estado === 'completada' ? (
-
                                             <div className="text-xs text-gray-600">
-
                                               {formatCompletionDate(evaluacion.fechaFin || evaluacion.fecha_fin)}
-
                                             </div>
-
                                           ) : (
-
                                             <span className="text-xs text-gray-400">-</span>
-
                                           )}
-
                                         </div>
 
                                         
 
-                                        {/* Columna 6: Acciones - Compacto */}
-
+                                        {/* Columna 6: Acciones - Texto seleccionable estético */}
                                         <div className="col-span-1 text-center flex items-center justify-center">
                                           {evaluacion.estado === 'completada' ? (
-                                            <button
+                                            <span
                                               onClick={() => {
-                                                console.log('🔄 BOTÓN VER CLIC - ID EVALUACIÓN:', evaluacion.id);
+                                                console.log('🔄 TEXTO VER CLIC - ID EVALUACIÓN:', evaluacion.id);
                                                 handleVerEvaluacion(evaluacion.id);
                                               }}
-                                              className="px-2 py-0.5 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700 transition-colors"
+                                              className="text-blue-600 hover:text-blue-800 text-xs font-medium cursor-pointer transition-colors underline decoration-dotted decoration-blue-300 hover:decoration-blue-500"
+                                              title="Ver detalles de la evaluación"
                                             >
-                                              Ver
-                                            </button>
+                                              Ver evaluación
+                                            </span>
+                                          ) : evaluacion.estado === 'en_progreso' ? (
+                                            <div className="flex flex-col items-center">
+                                              <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded border border-orange-200 mb-1">
+                                                En progreso
+                                              </span>
+                                              <span
+                                                onClick={() => {
+                                                  console.log('🔄 TEXTO VER PROGRESO - ID EVALUACIÓN:', evaluacion.id);
+                                                  handleVerEvaluacion(evaluacion.id);
+                                                }}
+                                                className="text-orange-600 hover:text-orange-800 text-xs font-medium cursor-pointer transition-colors underline decoration-dotted decoration-orange-300 hover:decoration-orange-500"
+                                                title="Ver progreso de la evaluación"
+                                              >
+                                                Ver progreso
+                                              </span>
+                                            </div>
                                           ) : evaluacion.id ? (
                                             <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs font-medium rounded border border-yellow-200">
                                               Iniciada

@@ -77,11 +77,17 @@ module.exports = {
         field: 'cargo_id',
         comment: 'Cargo o posición del usuario'
       },
-      empresa: {
-        type: Sequelize.STRING,
+      empresa_id: {
+        type: Sequelize.INTEGER,
         allowNull: true,
-        defaultValue: null,
-        comment: 'Empresa a la que pertenece el usuario'
+        references: {
+          model: 'empresas',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'RESTRICT',
+        field: 'empresa_id',
+        comment: 'Empresa a la que pertenece el usuario (puede ser nulo)'
       },
       
       // Campos de estado y fechas laborales
@@ -152,7 +158,7 @@ module.exports = {
     await queryInterface.addIndex('usuarios', ['departamento_id']);
     await queryInterface.addIndex('usuarios', ['cargo_id']);
     await queryInterface.addIndex('usuarios', ['estado']);
-    await queryInterface.addIndex('usuarios', ['empresa']);
+    await queryInterface.addIndex('usuarios', ['empresa_id']);
   },
 
   down: async (queryInterface, Sequelize) => {

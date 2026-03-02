@@ -38,7 +38,8 @@ exports.crearFormulario = catchAsync(async (req, res, next) => {
     estado = 'activo',
     preguntas,
     fechaFin,
-    cargo_id // Solo para formularios anuales
+    cargo_id, // Solo para formularios anuales
+    empresa_id // Para ambos tipos de formulario
   } = req.body;
 
   // Validar que vengan preguntas
@@ -50,6 +51,9 @@ exports.crearFormulario = catchAsync(async (req, res, next) => {
     return next(new AppError('La periodicidad debe ser "trimestral" o "anual"', 400));
   }
   
+  // Declarar empresaIdFinal aquí para que esté disponible en ambos casos
+  let empresaIdFinal = empresa_id;
+  
   // Validaciones específicas según periodicidad
   if (periodicidad === 'trimestral') {
     // Formularios trimestrales no requieren cargo_id
@@ -57,6 +61,10 @@ exports.crearFormulario = catchAsync(async (req, res, next) => {
       return next(new AppError('Los formularios trimestrales no deben especificar cargo_id', 400));
     }
     
+    // Formularios trimestrales requieren empresa_id
+    if (!empresa_id) {
+      return next(new AppError('Los formularios trimestrales deben especificar una empresa', 400));
+    }
     
     // Validar que las preguntas trimestrales tengan la estructura correcta
     for (const pregunta of preguntas) {
@@ -96,6 +104,17 @@ exports.crearFormulario = catchAsync(async (req, res, next) => {
     if (!cargo_id) {
       return next(new AppError('Los formularios anuales deben especificar un cargo_id', 400));
     }
+    
+    // Para formularios anuales, obtener empresa_id del cargo si no se proporciona
+    if (!empresaIdFinal) {
+      const cargo = await Cargo.findByPk(cargo_id, {
+        include: [{ model: Departamento, as: 'departamento' }]
+      });
+      if (!cargo || !cargo.departamento) {
+        return next(new AppError('No se pudo determinar la empresa del cargo especificado', 400));
+      }
+      empresaIdFinal = cargo.departamento.empresa_id;
+    }
   }
   
   // Iniciar transacción para crear formulario y preguntas
@@ -108,7 +127,8 @@ exports.crearFormulario = catchAsync(async (req, res, next) => {
       periodicidad,
       estado,
       fechaInicio: new Date(), // Fecha actual
-      fechaFin: fechaFin ? new Date(fechaFin) : null
+      fechaFin: fechaFin ? new Date(fechaFin) : null,
+      empresa_id: periodicidad === 'trimestral' ? empresa_id : empresaIdFinal
     };
     
     // Para formularios trimestrales, porcentajes_apartados es null
@@ -294,11 +314,11 @@ exports.obtenerPreguntasExistentes = catchAsync(async (req, res, next) => {
     status: 'success',
     results: Object.keys(preguntasAgrupadas).length,
     data: {
-      preguntas: Object.values(preguntasAgrupadas),
-      cargos: cargos
+      preguntas: preguntasAgrupadas
     }
   });
 });
+
 // Obtener todos los formularios
 exports.obtenerFormularios = catchAsync(async (req, res, next) => {
   const formularios = await Formulario.findAll({
@@ -317,6 +337,11 @@ exports.obtenerFormularios = catchAsync(async (req, res, next) => {
             as: 'departamento'
           }
         ]
+      },
+      {
+        model: require('../models').Empresa,
+        as: 'empresa',
+        attributes: ['id', 'nombre']
       }
     ]
   });
@@ -362,7 +387,7 @@ exports.obtenerFormulario = catchAsync(async (req, res, next) => {
 // Actualizar un formulario
 exports.actualizarFormulario = catchAsync(async (req, res, next) => {
   const { id } = req.params;
-  const { nombre, descripcion, tipo, periodicidad, estado, preguntas, cargo_id } = req.body;
+  const { nombre, descripcion, tipo, periodicidad, estado, preguntas, cargo_id, esActualizacionParcial = false } = req.body;
   const formulario = await Formulario.findByPk(id);
   if (!formulario) {
     return next(new AppError('No se encontró el formulario con el ID especificado', 404));
@@ -420,12 +445,14 @@ exports.actualizarFormulario = catchAsync(async (req, res, next) => {
         }
       }
       
-      // Eliminar preguntas que no están en la lista actualizada
-      const idsPreguntasActualizadas = preguntasActualizadas.map(p => p.id).filter(id => id);
-      const preguntasAEliminar = preguntasExistentes.filter(p => !idsPreguntasActualizadas.includes(p.id));
-      
-      for (const preguntaAEliminar of preguntasAEliminar) {
-        await preguntaAEliminar.destroy({ transaction: t });
+      // Eliminar preguntas que no están en la lista actualizada SOLO si no es actualización parcial
+      if (!esActualizacionParcial) {
+        const idsPreguntasActualizadas = preguntasActualizadas.map(p => p.id).filter(id => id);
+        const preguntasAEliminar = preguntasExistentes.filter(p => !idsPreguntasActualizadas.includes(p.id));
+        
+        for (const preguntaAEliminar of preguntasAEliminar) {
+          await preguntaAEliminar.destroy({ transaction: t });
+        }
       }
       
       return preguntasActualizadas;

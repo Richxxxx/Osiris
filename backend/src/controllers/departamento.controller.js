@@ -61,11 +61,25 @@ exports.obtenerCargosPorDepartamento = async (req, res) => {
   }
 };
 
-// Obtener todos los departamentos
+// Obtener todos los departamentos (con filtro opcional por empresa)
 exports.obtenerDepartamentos = async (req, res) => {
   try {
+    const { empresa_id } = req.query;
+    
+    let whereClause = {};
+    if (empresa_id) {
+      whereClause.empresa_id = empresa_id;
+    }
+    
     const departamentos = await Departamento.findAll({
-      attributes: ['id', 'nombre']
+      where: whereClause,
+      attributes: ['id', 'nombre', 'empresa_id'],
+      include: [{
+        model: require('../models').Empresa,
+        as: 'empresa',
+        attributes: ['id', 'nombre']
+      }],
+      order: [['nombre', 'ASC']]
     });
     
     res.status(200).json({

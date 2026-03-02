@@ -13,6 +13,7 @@ import {
   Search
 } from 'lucide-react';
 import { obtenerEstadisticas, obtenerEstadisticasPorDepartamento, invalidateCache } from '../../services/gestionService';
+import { obtenerEmpresas } from '../../services/empresaService';
 import HeaderGestion from '../../components/gestion/Header';
 import SidebarGestion from '../../components/gestion/Sidebar';
 import DepartmentChart from '../../components/gestion/DepartmentChart';
@@ -54,6 +55,11 @@ const EstadisticasPage = () => {
   const [ordenDireccion, setOrdenDireccion] = useState('desc');
   const [isOrdenDireccionDropdownOpen, setIsOrdenDireccionDropdownOpen] = useState(false);
   
+  // Company filter states
+  const [empresas, setEmpresas] = useState([]);
+  const [selectedEmpresa, setSelectedEmpresa] = useState('todos');
+  const [isEmpresaDropdownOpen, setIsEmpresaDropdownOpen] = useState(false);
+  
   const [stats, setStats] = useState({
     totalEmpleados: 0,
     totalEvaluaciones: 0,
@@ -93,10 +99,13 @@ const EstadisticasPage = () => {
       setSelectedPeriodo(getCurrentPeriod());
     }
 
+    // Cargar empresas
+    fetchEmpresas();
+
     if (currentUser && selectedPeriodo) {
       fetchEstadisticas();
     }
-  }, [selectedPeriodo, ordenDireccion]); // 🔥 SIMPLIFICADO: Solo dependencia de dirección
+  }, [selectedPeriodo, ordenDireccion, selectedEmpresa]); // 🔥 SIMPLIFICADO: Solo dependencia de dirección y empresa
 
   // 🔥 Invalidar caché cada 2 minutos para mantener datos frescos (menos invasivo)
   useEffect(() => {
@@ -111,15 +120,16 @@ const EstadisticasPage = () => {
     try {
       setLoading(true);
       
-      // 🔥 SIMPLIFICADO: Solo parámetros de valoración
+      // 🔥 SIMPLIFICADO: Solo parámetros de valoración y empresa
       const params = {
         trimestre: selectedPeriodo,
         ordenarPor: 'valoracion',
-        ordenDireccion: ordenDireccion
+        ordenDireccion: ordenDireccion,
+        ...(selectedEmpresa && selectedEmpresa !== 'todos' && { empresa_id: selectedEmpresa })
       };
       
       const [statsResponse, deptResponse] = await Promise.all([
-        obtenerEstadisticas(selectedPeriodo),
+        obtenerEstadisticas(selectedPeriodo, selectedEmpresa),
         obtenerEstadisticasPorDepartamento(params)
       ]);
       
@@ -128,9 +138,18 @@ const EstadisticasPage = () => {
       
     } catch (error) {
       console.error('Error al cargar estadísticas:', error);
-      toast.error('Error al cargar las estadísticas');
+      setError('Error al cargar las estadísticas');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchEmpresas = async () => {
+    try {
+      const empresasData = await obtenerEmpresas();
+      setEmpresas(empresasData);
+    } catch (err) {
+      console.error('Error al cargar empresas:', err);
     }
   };
 
@@ -159,6 +178,11 @@ const EstadisticasPage = () => {
   const handleOrdenDireccionSelect = (direccion) => {
     setOrdenDireccion(direccion);
     setIsOrdenDireccionDropdownOpen(false);
+  };
+
+  const handleEmpresaSelect = (empresaId) => {
+    setSelectedEmpresa(empresaId);
+    setIsEmpresaDropdownOpen(false);
   };
 
   // Skeleton loader para estadísticas
@@ -248,8 +272,54 @@ const EstadisticasPage = () => {
                   </p>
                 </div>
                 
-                {/* 🔥 SIMPLIFICADO: Filtros y búsqueda - Valoración a la izquierda */}
+                {/* 🔥 SIMPLIFICADO: Filtros y búsqueda - Empresa, Valoración, Búsqueda, Periodo */}
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+                  {/* Filtro de empresa */}
+                  <div className="relative">
+                    <div className="flex items-center space-x-1 sm:space-x-2">
+                      <span className="text-xs sm:text-sm text-gray-600">Empresa:</span>
+                      <button
+                        onClick={() => setIsEmpresaDropdownOpen(!isEmpresaDropdownOpen)}
+                        className="flex items-center px-2 py-1.5 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm max-w-32"
+                      >
+                        <span className="truncate">
+                          {selectedEmpresa === 'todos' 
+                            ? 'Todas' 
+                            : empresas.find(e => e.id === selectedEmpresa)?.nombre || 'Seleccionar'
+                          }
+                        </span>
+                        <ChevronDown className="ml-2 h-4 w-4 flex-shrink-0" />
+                      </button>
+                    </div>
+                    
+                    {isEmpresaDropdownOpen && (
+                      <div className="absolute left-0 mt-2 w-48 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
+                        <div className="max-h-60 overflow-y-auto">
+                          <button
+                            onClick={() => handleEmpresaSelect('todos')}
+                            className={`w-full text-left px-4 py-2 hover:bg-gray-100 ${
+                              selectedEmpresa === 'todos' ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                            }`}
+                          >
+                            Todas las empresas
+                          </button>
+                          {empresas.map((empresa) => (
+                            <button
+                              key={empresa.id}
+                              onClick={() => handleEmpresaSelect(empresa.id)}
+                              className={`w-full text-left px-4 py-2 hover:bg-gray-100 ${
+                                selectedEmpresa === empresa.id ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                              }`}
+                              title={empresa.nombre}
+                            >
+                              <span className="truncate block">{empresa.nombre}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   {/* Filtro de valoración - MOVIDO A LA IZQUIERDA */}
                   <div className="relative">
                     <div className="flex items-center space-x-1 sm:space-x-2">

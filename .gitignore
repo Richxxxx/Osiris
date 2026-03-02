@@ -13,6 +13,7 @@ node_modules/
 dist/
 build/
 frontend/dist/
+LIMPIEZA/
 
 # Logs
 logs

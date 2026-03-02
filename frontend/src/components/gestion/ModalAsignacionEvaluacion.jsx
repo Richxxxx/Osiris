@@ -62,7 +62,6 @@ const ModalAsignacionEvaluacion = ({
     try {
       // Crear la evaluación usando el endpoint existente que ya tiene la lógica para asignar el formulario
       const response = await axios.post('/usuarios/gestion/asignar-evaluacion', {
-        evaluadorId: 25, // ID del usuario de gestión (ajustar según sea necesario)
         empleadoId: usuario.id,
         tipo: tipoEvaluacionCalculado.periodicidad,
         periodo: tipoEvaluacionCalculado.periodo,

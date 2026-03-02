@@ -287,13 +287,13 @@ exports.finalizarEvaluacion = catchAsync(async (req, res, next) => {
     return next(new AppError('No se encontró la evaluación especificada', 404));
   }
   
-  // Verificar que el usuario es el evaluador asignado
-  if (evaluacion.evaluadorId !== usuarioId) {
+  // Verificar que el usuario es el evaluador asignado O que tomó una evaluación asignada
+  if (evaluacion.evaluadorId !== usuarioId && evaluacion.estado !== 'asignada') {
     return next(new AppError('No tienes permiso para finalizar esta evaluación', 403));
   }
   
-  // Verificar que la evaluación está en progreso
-  if (evaluacion.estado !== 'en_progreso') {
+  // Verificar que la evaluación está en progreso o asignada (puede finalizar directamente desde asignada)
+  if (!['en_progreso', 'asignada'].includes(evaluacion.estado)) {
     return next(new AppError('Esta evaluación no puede ser finalizada', 400));
   }
   
@@ -330,6 +330,11 @@ exports.finalizarEvaluacion = catchAsync(async (req, res, next) => {
     fecha_fin: new Date(),
     updatedAt: new Date()
   };
+  
+  // Si la evaluación estaba asignada, actualizar el evaluadorId con el usuario real
+  if (evaluacion.estado === 'asignada') {
+    updateData.evaluadorId = usuarioId;
+  }
   
   await evaluacion.update(updateData);
   
@@ -580,7 +585,7 @@ exports.iniciarEvaluacion = catchAsync(async (req, res, next) => {
     
     // Obtener información completa del evaluado
     const evaluado = await Usuario.findByPk(evaluadoId, {
-      attributes: ['id', 'nombre', 'apellido', 'email', 'fecha_ingreso_empresa', 'departamento_id', 'cargo_id'],
+      attributes: ['id', 'nombre', 'apellido', 'email', 'fecha_ingreso_empresa', 'departamento_id', 'cargo_id', 'empresa_id'],
       include: [
         {
           model: Cargo,
@@ -607,6 +612,11 @@ exports.iniciarEvaluacion = catchAsync(async (req, res, next) => {
     
     if (!evaluado) {
       return next(new AppError('No se encontró el empleado a evaluar', 404));
+    }
+
+    // Validar que el evaluado tenga empresa asignada
+    if (!evaluado.empresa_id) {
+      return next(new AppError('El usuario no tiene empresa asignada', 400));
     }
 
     // Función core para determinar periodicidad requerida
@@ -717,11 +727,12 @@ exports.iniciarEvaluacion = catchAsync(async (req, res, next) => {
     let formulario = null;
     
     if (periodicidadInfo.periodicidad === 'trimestral') {
-      // Para trimestrales, buscar el formulario trimestral activo
-            formulario = await Formulario.findOne({
+      // Para trimestrales, buscar el formulario trimestral activo de la misma empresa del evaluado
+      formulario = await Formulario.findOne({
         where: {
           estado: 'activo',
-          periodicidad: 'trimestral'
+          periodicidad: 'trimestral',
+          empresa_id: evaluado.empresa_id
         }
       });
     } else {
@@ -746,8 +757,12 @@ exports.iniciarEvaluacion = catchAsync(async (req, res, next) => {
     }
     
     if (!formulario) {
-      // Si no hay formulario, continuar sin él para no bloquear
-            // NO retornar error, solo continuar sin formulario
+      // Si no hay formulario, mostrar error específico según el caso
+      if (periodicidadInfo.periodicidad === 'trimestral') {
+        return next(new AppError('No hay un formulario para esta evaluación trimestral en la empresa del empleado', 400));
+      } else {
+        // Para anuales, continuar sin formulario para no bloquear (lógica existente)
+      }
     }
     
     // Verificar si ya existe una evaluación para este evaluado en este período
@@ -1971,23 +1986,15 @@ exports.obtenerEvaluacionesAsignadasActivas = catchAsync(async (req, res, next) 
       if (hoy <= fechaVencimiento) {
         const diasRestantes = Math.max(0, Math.ceil((fechaVencimiento - hoy) / (1000 * 60 * 60 * 24)));
         
-        return res.status(200).json({
+        evaluacionesActivas.push({
           ...evaluacion.toJSON(),
           diasRestantes,
-          fechaVencimiento: fechaVencimiento.toISOString().split('T')[0],
-          ventanaActiva: true,
-          fechaAsignacion: fechaAsignacion.toISOString().split('T')[0]
-        });
-      } else {
-        return res.status(200).json({
-          ...evaluacion.toJSON(),
-          ventanaActiva: false,
-          mensaje: 'La evaluación está fuera del período de activación'
+          fechaVencimiento: fechaVencimiento.toISOString().split('T')[0]
         });
       }
     }
     
-    res.status(200).json({
+    return res.status(200).json({
       status: 'success',
       results: evaluacionesActivas.length,
       data: evaluacionesActivas
@@ -2568,11 +2575,7 @@ exports.guardarRespuestas = catchAsync(async (req, res, next) => {
   const evaluacion = await Evaluacion.findOne({
     where: {
       id,
-      [Op.or]: [
-        { evaluadorId: usuarioId }, // El evaluador asignado
-        { estado: 'asignada' } // O cualquier evaluación asignada (para que pueda tomarla)
-      ],
-      estado: { [Op.in]: ['pendiente', 'en_progreso', 'asignada'] }
+      estado: { [Op.in]: ['asignada', 'en_progreso'] }
     },
     include: [
       {
@@ -2591,7 +2594,13 @@ exports.guardarRespuestas = catchAsync(async (req, res, next) => {
   });
 
   if (!evaluacion) {
-    return next(new AppError('No se encontró la evaluación o no tiene permiso para modificarla', 404));
+    return next(new AppError('No se encontró la evaluación o no está disponible', 404));
+  }
+
+  // Si está asignada, el usuario puede tomarla (independientemente del evaluadorId actual)
+  // Si ya está en progreso, solo el evaluador actual puede continuar
+  if (evaluacion.estado === 'en_progreso' && evaluacion.evaluadorId !== usuarioId) {
+    return next(new AppError('Esta evaluación ya está siendo respondida por otro evaluador', 403));
   }
 
   // Si se va a finalizar, validar que todas las preguntas obligatorias estén respondidas
@@ -2749,7 +2758,7 @@ exports.guardarRespuestas = catchAsync(async (req, res, next) => {
   const nuevoEstado = finalizar ? 'completada' : 'en_progreso';
   const fecha_fin = finalizar ? new Date() : null;
   
-  // Si es una evaluación asignada, actualizar el evaluador_id
+  // Si es una evaluación asignada, actualizar el evaluadorId y estado
   const updateData = {
     estado: nuevoEstado,
     ...(finalizar && { puntuacionTotal: puntuacionFinal }),
@@ -2759,7 +2768,7 @@ exports.guardarRespuestas = catchAsync(async (req, res, next) => {
     updatedAt: new Date()
   };
   
-  // Si la evaluación estaba asignada, actualizar el evaluadorId
+  // Si la evaluación estaba asignada, actualizar el evaluadorId con el usuario real
   if (evaluacion.estado === 'asignada') {
     updateData.evaluadorId = usuarioId;
   }

@@ -10,12 +10,23 @@ module.exports = {
       },
       nombre: {
         type: Sequelize.STRING,
-        allowNull: false,
-        unique: true
+        allowNull: false
       },
       descripcion: {
         type: Sequelize.TEXT,
         allowNull: true
+      },
+      empresa_id: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'empresas',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'RESTRICT',
+        field: 'empresa_id',
+        comment: 'Empresa a la que pertenece el cargo'
       },
       departamento_id: {
         type: Sequelize.INTEGER,
@@ -43,11 +54,15 @@ module.exports = {
       }
     });
 
-    // Crear índice para búsquedas por nombre
-    await queryInterface.addIndex('cargos', ['nombre']);
-    
-    // Crear índice para búsquedas por departamento
+    // Índices
+    await queryInterface.addIndex('cargos', ['empresa_id']);
     await queryInterface.addIndex('cargos', ['departamento_id']);
+    // Índice compuesto único por empresa y nombre
+    await queryInterface.addIndex('cargos', {
+      fields: ['empresa_id', 'nombre'],
+      unique: true,
+      name: 'cargos_empresa_nombre_unique'
+    });
   },
 
   down: async (queryInterface, Sequelize) => {

@@ -50,16 +50,7 @@ const PrivateRoute = ({ children, requiredRole }) => {
 
   // Verificar si el usuario tiene el rol requerido
   if (requiredRole && userRole !== requiredRole) {
-    // Redirigir al dashboard correspondiente según el rol
-    const rolePath = {
-      'administrador': '/admin',
-      'evaluador': '/evaluador',
-      'empleado': '/empleado',
-      'gestion': '/gestion'
-    };
-    
-    const redirectTo = rolePath[userRole] || '/login';
-    return <Navigate to={redirectTo} replace />;
+    return <Navigate to="/unauthorized" replace />;
   }
 
   return children;
@@ -107,7 +98,7 @@ const RoleBasedRedirect = () => {
 function App() {
   return (
     <UserProvider>
-      <Router>
+      <Router future={{ v7_relativeSplatPath: true }}>
         <div className="min-h-screen bg-gray-50 flex flex-col">
           <main className="flex-grow">
           <Routes>

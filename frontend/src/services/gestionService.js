@@ -166,9 +166,23 @@ export const obtenerEstadisticasPorDepartamento = async (params = null) => {
 
 // Seguimiento por departamento
 
-export const obtenerSeguimientoPorDepartamento = async (periodo = null) => {
+export const obtenerSeguimientoPorDepartamento = async (periodo = null, empresaId = null) => {
 
-  const url = periodo ? `/usuarios/gestion/seguimiento/departamentos?periodo=${periodo}` : '/usuarios/gestion/seguimiento/departamentos';
+  let url = '/usuarios/gestion/seguimiento/departamentos';
+
+  // Build query parameters
+
+  const params = new URLSearchParams();
+
+  if (periodo) params.append('periodo', periodo);
+
+  if (empresaId && empresaId !== 'todos') params.append('empresa_id', empresaId);
+
+  if (params.toString()) {
+
+    url += `?${params.toString()}`;
+
+  }
 
   const cacheKey = getCacheKey(url);
 
@@ -350,6 +364,8 @@ export const obtenerValoracionTrimestralPorDepartamento = async (filtros = {}) =
 
   if (filtros.anio) params.append('anio', filtros.anio);
 
+  if (filtros.empresa_id && filtros.empresa_id !== 'todos') params.append('empresa_id', filtros.empresa_id);
+
   
 
   const url = `/usuarios/gestion/estadisticas/departamentos/valoracion-trimestral?${params}`;
@@ -381,6 +397,7 @@ export const obtenerValoracionTrimestralPorDepartamento = async (filtros = {}) =
 
 
 // 🔥 Función para invalidar caché específica (menos invasiva)
+
 export const invalidateCache = (pattern = null) => {
   if (pattern) {
     // Invalidar solo claves que coincidan con el patrón

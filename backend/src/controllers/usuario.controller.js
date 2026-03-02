@@ -293,6 +293,7 @@ exports.obtenerUsuarios = catchAsync(async (req, res, next) => {
     include: [
       { model: Rol, as: 'rol', attributes: ['id', 'nombre', 'descripcion'] },
       { model: Departamento, as: 'departamento', attributes: ['id', 'nombre'] },
+      { model: require('../models').Empresa, as: 'empresa', attributes: ['id', 'nombre'] },
       cargoInclude
     ]
   });
@@ -359,7 +360,7 @@ exports.crearUsuario = catchAsync(async (req, res, next) => {
     cedula: req.body.cedula,
     nombre: req.body.nombre,
     apellido: req.body.apellido,
-    empresa: req.body.empresa || null,
+    empresa_id: req.body.empresa_id || null,
     email: req.body.email || null,
     password: req.body.password,
     cargo_id: cargoProporcionado ? cargoId : null,
@@ -709,7 +710,7 @@ exports.actualizarMiContraseña = catchAsync(async (req, res, next) => {
 // Obtener estadísticas generales para el dashboard de gestión
 exports.obtenerEstadisticasGestion = catchAsync(async (req, res) => {
   try {
-    const { trimestre } = req.query;
+    const { trimestre, empresa_id } = req.query;
     
     // Obtener el rol evaluador y empleado de forma separada
     const rolEvaluador = await Rol.findOne({ where: { nombre: 'evaluador' } });
@@ -754,20 +755,66 @@ exports.obtenerEstadisticasGestion = catchAsync(async (req, res) => {
     // 🔥 NUEVA LÓGICA: Calcular evaluaciones esperadas en este trimestre
     const evaluacionesEsperadas = await calcularEvaluacionesEsperadasPorTrimestre(trimestreCalculado, anioCalculado);
     
+    // Build company filter condition
+    const companyFilter = {};
+    if (empresa_id && empresa_id !== 'todos') {
+      companyFilter.empresa_id = empresa_id;
+    }
+
     // Total de empleados (se mantiene para referencia, pero no para cálculos)
     const totalEmpleados = await Usuario.count({ 
       where: { 
         rol_id: rolEmpleado.id,
-        estado: 'activo'
+        estado: 'activo',
+        ...companyFilter
       }
     });
 
     // Estadísticas de evaluaciones existentes (filtradas por trimestre si se especifica)
+    const evaluacionWhereCondition = {
+      ...evaluacionFilter,
+      ...(empresa_id && empresa_id !== 'todos' && {
+        '$evaluado.empresa_id$': empresa_id
+      })
+    };
+
     const [totalEvaluacionesCreadas, evaluacionesCompletadas, evaluacionesEnProgreso, evaluacionesPendientes] = await Promise.all([
-      Evaluacion.count(evaluacionFilter),
-      Evaluacion.count({ where: { ...evaluacionFilter, estado: 'completada' } }),
-      Evaluacion.count({ where: { ...evaluacionFilter, estado: 'en_progreso' } }),
-      Evaluacion.count({ where: { ...evaluacionFilter, estado: 'pendiente' } })
+      Evaluacion.count({ 
+        where: evaluacionWhereCondition,
+        include: empresa_id && empresa_id !== 'todos' ? [{
+          model: Usuario,
+          as: 'evaluado',
+          where: { empresa_id: empresa_id },
+          attributes: []
+        }] : []
+      }),
+      Evaluacion.count({ 
+        where: { ...evaluacionWhereCondition, estado: 'completada' },
+        include: empresa_id && empresa_id !== 'todos' ? [{
+          model: Usuario,
+          as: 'evaluado',
+          where: { empresa_id: empresa_id },
+          attributes: []
+        }] : []
+      }),
+      Evaluacion.count({ 
+        where: { ...evaluacionWhereCondition, estado: 'en_progreso' },
+        include: empresa_id && empresa_id !== 'todos' ? [{
+          model: Usuario,
+          as: 'evaluado',
+          where: { empresa_id: empresa_id },
+          attributes: []
+        }] : []
+      }),
+      Evaluacion.count({ 
+        where: { ...evaluacionWhereCondition, estado: 'pendiente' },
+        include: empresa_id && empresa_id !== 'todos' ? [{
+          model: Usuario,
+          as: 'evaluado',
+          where: { empresa_id: empresa_id },
+          attributes: []
+        }] : []
+      })
     ]);
 
     // 🔥 LÓGICA CORREGIDA: Pendientes = evaluaciones esperadas - (completadas + en_progreso)
@@ -780,12 +827,18 @@ exports.obtenerEstadisticasGestion = catchAsync(async (req, res) => {
       Usuario.count({ 
         where: { 
           rol_id: rolEvaluador?.id,
-          estado: 'activo'
+          estado: 'activo',
+          ...companyFilter
         }
       }),
       
       // Departamentos activos (estado es booleano, true = activo)
-      Departamento.count({ where: { estado: true } })
+      Departamento.count({ 
+        where: { 
+          estado: true,
+          ...companyFilter
+        } 
+      })
     ]);
 
     const [lideresActivos, departamentos] = estadisticas;
@@ -913,7 +966,7 @@ exports.obtenerEvaluacionesCompletadasPorDepartamento = catchAsync(async (req, r
 // Obtener estadísticas por departamento para gráficas
 exports.obtenerEstadisticasPorDepartamento = catchAsync(async (req, res) => {
   try {
-    const { trimestre, ordenarPor, ordenDireccion } = req.query;
+    const { trimestre, ordenarPor, ordenDireccion, empresa_id } = req.query;
     
     // Obtener roles necesarios
     const rolEmpleado = await Rol.findOne({ where: { nombre: 'empleado' } });
@@ -926,9 +979,18 @@ exports.obtenerEstadisticasPorDepartamento = catchAsync(async (req, res) => {
       });
     }
 
+    // Build company filter condition
+    const companyFilter = {};
+    if (empresa_id && empresa_id !== 'todos') {
+      companyFilter.empresa_id = empresa_id;
+    }
+
     // Obtener todos los departamentos activos
     const departamentos = await Departamento.findAll({
-      where: { estado: true },
+      where: { 
+        estado: true,
+        ...companyFilter
+      },
       include: [
         {
           model: Usuario,
@@ -936,6 +998,7 @@ exports.obtenerEstadisticasPorDepartamento = catchAsync(async (req, res) => {
           where: { 
             estado: 'activo',
             rol_id: rolEmpleado.id
+            // No filtrar por empresa_id aquí, ya que los usuarios vienen de los departamentos filtrados
           },
           required: false // Incluir departamentos sin empleados
         }
@@ -1175,13 +1238,14 @@ exports.obtenerEstadisticasPorDepartamento = catchAsync(async (req, res) => {
       })
     );
 
-    // 🔥 SIMPLIFICADO: Solo filtro de valoración
+    // 🔥 SIMPLIFICADO: Solo filtro de valoración - CORREGIDO para usar valoración trimestral
     let estadisticasOrdenadas = estadisticasDepartamentos;
     
     if (ordenarPor === 'valoracion' && ordenDireccion) {
       estadisticasOrdenadas = estadisticasDepartamentos.sort((a, b) => {
-        const valorA = calcularValoracionPromedio(a.estadisticas.valoracion);
-        const valorB = calcularValoracionPromedio(b.estadisticas.valoracion);
+        // Usar valoración trimestral específicamente para ordenamiento más preciso
+        const valorA = calcularValoracionPromedio(a.estadisticas.valoracion_trimestral || {});
+        const valorB = calcularValoracionPromedio(b.estadisticas.valoracion_trimestral || {});
         
         // Aplicar dirección del ordenamiento
         if (ordenDireccion === 'desc') {
@@ -1193,14 +1257,13 @@ exports.obtenerEstadisticasPorDepartamento = catchAsync(async (req, res) => {
       });
     }
     
-    // Función auxiliar para calcular valoración promedio ponderada
+    // Función auxiliar para calcular valoración promedio ponderada - ACTUALIZADA para trimestrales
     function calcularValoracionPromedio(valoracion) {
       const pesos = {
-        'EXCELENTE': 5,
-        'SOBRESALIENTE': 4,
-        'BUENO': 3,
-        'ACEPTABLE': 2,
-        'DEFICIENTE': 1
+        'DESTACADO': 4,    // Trimestral: Máxima valoración
+        'BUENO': 3,        // Trimestral: Buena valoración  
+        'BAJO': 2,         // Trimestral: Baja valoración
+        'SIN DATOS': 0     // Sin datos
       };
       
       let totalPonderado = 0;
@@ -1233,7 +1296,7 @@ exports.obtenerEstadisticasPorDepartamento = catchAsync(async (req, res) => {
 
 // Obtener seguimiento de evaluaciones por departamento
 exports.obtenerSeguimientoPorDepartamento = catchAsync(async (req, res) => {
-  const { periodo } = req.query;
+  const { periodo, empresa_id } = req.query;
   
   // Función para obtener fechas del Q actual dinámicamente
   const obtenerFechasQActual = () => {
@@ -1340,13 +1403,22 @@ exports.obtenerSeguimientoPorDepartamento = catchAsync(async (req, res) => {
   const rolEmpleado = await Rol.findOne({ where: { nombre: 'empleado' } });
   const rolEvaluador = await Rol.findOne({ where: { nombre: 'evaluador' } });
   
+  // Build department filter condition
+  const departamentoWhereCondition = { estado: true };
+  if (empresa_id && empresa_id !== 'todos') {
+    departamentoWhereCondition.empresa_id = empresa_id;
+  }
+
   const departamentos = await Departamento.findAll({
-    where: { estado: true },
+    where: departamentoWhereCondition,
     include: [
       {
         model: Usuario,
         as: 'usuarios',
-        where: { estado: 'activo' },
+        where: { 
+          estado: 'activo'
+          // No filtrar por empresa_id aquí, ya que los usuarios vienen de los departamentos filtrados
+        },
         include: [
           {
             model: Rol,
@@ -2122,6 +2194,7 @@ exports.asignarEvaluacionManual = catchAsync(async (req, res) => {
   try {
     // Obtener datos del empleado para determinar departamento
     const empleado = await Usuario.findByPk(empleadoId, {
+      attributes: ['id', 'nombre', 'apellido', 'email', 'fecha_ingreso_empresa', 'departamento_id', 'cargo_id', 'empresa_id'],
       include: [
         {
           model: Departamento,
@@ -2142,27 +2215,32 @@ exports.asignarEvaluacionManual = catchAsync(async (req, res) => {
         message: 'Empleado no encontrado'
       });
     }
-    
-    // Buscar evaluador del departamento si no se especifica
-    let evaluadorFinalId = evaluadorId;
-    if (!evaluadorId) {
-            const evaluador = await Usuario.findOne({
-        where: {
-          departamento_id: empleado.departamento_id,
-          rol_id: 2, // rol evaluador
-          estado: 'activo'
-        }
+
+    // Validar que el empleado tenga empresa asignada
+    if (!empleado.empresa_id) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'El usuario no tiene empresa asignada'
       });
-      
-      if (!evaluador) {
-                return res.status(404).json({
-          status: 'error',
-          message: 'No se encontró un evaluador para este departamento'
-        });
+    }
+    
+    // Buscar SIEMPRE el evaluador del departamento del empleado
+    const evaluador = await Usuario.findOne({
+      where: {
+        departamento_id: empleado.departamento_id,
+        rol_id: 2, // rol evaluador
+        estado: 'activo'
       }
-      
-      evaluadorFinalId = evaluador.id;
-          }
+    });
+    
+    if (!evaluador) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'No se encontró un evaluador activo para este departamento. Por favor, asigne un evaluador al departamento antes de crear evaluaciones.'
+      });
+    }
+    
+    const evaluadorFinalId = evaluador.id;
     
     // Verificar si ya existe una evaluación completada para este período y año
     const evaluacionCompletadaExistente = await Evaluacion.findOne({
@@ -2240,11 +2318,12 @@ exports.asignarEvaluacionManual = catchAsync(async (req, res) => {
       const periodicidadCalculada = calcularPeriodicidadPorFechaIngreso(empleado.fecha_ingreso_empresa, new Date());
       
       if (periodicidadCalculada === 'trimestral') {
-        // Para trimestrales, buscar el formulario trimestral activo
+        // Para trimestrales, buscar el formulario trimestral activo de la misma empresa del empleado
         formulario = await Formulario.findOne({
           where: {
             estado: 'activo',
-            periodicidad: 'trimestral'
+            periodicidad: 'trimestral',
+            empresa_id: empleado.empresa_id
           }
         });
       } else {
@@ -2272,7 +2351,15 @@ exports.asignarEvaluacionManual = catchAsync(async (req, res) => {
       const formulario_id = formulario ? formulario.id : null;
       
       if (!formulario) {
-        // Sin formulario activo, continuar sin él
+        // Si no hay formulario, mostrar error específico según el caso
+        if (periodicidadCalculada === 'trimestral') {
+          return res.status(400).json({
+            status: 'error',
+            message: 'No hay un formulario para esta evaluación trimestral en la empresa del empleado'
+          });
+        } else {
+          // Para anuales, continuar sin formulario para no bloquear (lógica existente)
+        }
       }
       
       // Crear nueva evaluación
@@ -2332,11 +2419,12 @@ exports.asignarEvaluacionManual = catchAsync(async (req, res) => {
         ...evaluacionCompleta.toJSON(),
         evaluadorAsignado: {
           id: evaluadorFinalId,
-          tipo: evaluadorId ? 'manual' : 'automatico'
+          tipo: 'automatico' // Siempre automático ya que se busca por departamento
         }
       }
     });
   } catch (error) {
+    console.error('Error en asignarEvaluacionManual:', error.message);
     res.status(500).json({
       status: 'error',
       message: 'Error al asignar evaluación',
@@ -2348,16 +2436,25 @@ exports.asignarEvaluacionManual = catchAsync(async (req, res) => {
 // Obtener valoración trimestral promedio por departamento para gráficas
 exports.obtenerValoracionTrimestralPorDepartamento = catchAsync(async (req, res) => {
   try {
-    const { trimestre, anio } = req.query;
+    const { trimestre, anio, empresa_id } = req.query;
     
     // Determinar trimestre y año actuales si no se especifican
     const fechaActual = new Date();
     const trimestreActual = trimestre || `Q${Math.floor(fechaActual.getMonth() / 3) + 1}`;
     const anioActual = anio || fechaActual.getFullYear();
     
+    // Build company filter condition
+    const companyFilter = {};
+    if (empresa_id && empresa_id !== 'todos') {
+      companyFilter.empresa_id = empresa_id;
+    }
+    
     // Obtener todos los departamentos activos
     const departamentos = await Departamento.findAll({
-      where: { estado: true },
+      where: { 
+        estado: true,
+        ...companyFilter
+      },
       include: [
         {
           model: Usuario,
@@ -2365,6 +2462,7 @@ exports.obtenerValoracionTrimestralPorDepartamento = catchAsync(async (req, res)
           where: { 
             estado: 'activo',
             rol_id: (await Rol.findOne({ where: { nombre: 'empleado' } }))?.id
+            // No filtrar por empresa_id aquí, ya que los usuarios vienen de los departamentos filtrados
           },
           required: false
         }

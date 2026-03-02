@@ -10,9 +10,11 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import { obtenerValoracionTrimestralPorDepartamento } from '../../services/gestionService';
+import { obtenerEmpresas } from '../../services/empresaService';
 import HeaderGestion from '../../components/gestion/Header';
 import SidebarGestion from '../../components/gestion/Sidebar';
 import { BarChartOutlined } from '@ant-design/icons';
+import { ChevronDown } from 'lucide-react';
 
 // Colores para las valoraciones trimestrales
 const VALORACION_COLORS = {
@@ -44,8 +46,13 @@ const ReportesPage = () => {
   const [error, setError] = useState(null);
   const [filtros, setFiltros] = useState({
     trimestre: getCurrentPeriod().quarter,
-    anio: getCurrentPeriod().year
+    anio: getCurrentPeriod().year,
+    empresa_id: 'todos'
   });
+
+  // Company filter states
+  const [empresas, setEmpresas] = useState([]);
+  const [isEmpresaDropdownOpen, setIsEmpresaDropdownOpen] = useState(false);
 
   // Generar opciones de años (actual y 2 años anteriores)
   const getCurrentYear = () => new Date().getFullYear();
@@ -63,8 +70,18 @@ const ReportesPage = () => {
   ];
 
   useEffect(() => {
+    cargarEmpresas();
     cargarValoracionTrimestral();
   }, [filtros]);
+
+  const cargarEmpresas = async () => {
+    try {
+      const empresasData = await obtenerEmpresas();
+      setEmpresas(empresasData);
+    } catch (err) {
+      console.error('Error al cargar empresas:', err);
+    }
+  };
 
   const cargarValoracionTrimestral = async () => {
     try {
@@ -90,6 +107,11 @@ const ReportesPage = () => {
       ...prev,
       [key]: value
     }));
+  };
+
+  const handleEmpresaSelect = (empresaId) => {
+    handleFiltroChange('empresa_id', empresaId);
+    setIsEmpresaDropdownOpen(false);
   };
 
   // Preparar datos para la gráfica - USAR DATOS REALES DEL BACKEND
@@ -263,9 +285,57 @@ const ReportesPage = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01.293.707l6.414 6.414a1 1 0 01.707.293l6.414-6.414a1 1 0 01.293-.707V5a1 1 0 01-1-1z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1l4 4" />
                 </svg>
-                Filtros de Período
+                Filtros de Período y Empresa
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Filtro de empresa */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Empresa
+                  </label>
+                  <div className="relative">
+                    <button
+                      onClick={() => setIsEmpresaDropdownOpen(!isEmpresaDropdownOpen)}
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-left bg-white"
+                    >
+                      <span className="truncate">
+                        {filtros.empresa_id === 'todos' 
+                          ? 'Todas las empresas' 
+                          : empresas.find(e => e.id === filtros.empresa_id)?.nombre || 'Seleccionar'
+                        }
+                      </span>
+                      <ChevronDown className="absolute right-2 top-2.5 h-4 w-4 text-gray-400 flex-shrink-0" />
+                    </button>
+                    
+                    {isEmpresaDropdownOpen && (
+                      <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg">
+                        <div className="max-h-60 overflow-y-auto">
+                          <button
+                            onClick={() => handleEmpresaSelect('todos')}
+                            className={`block w-full text-left px-3 py-2 hover:bg-gray-100 ${
+                              filtros.empresa_id === 'todos' ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                            }`}
+                          >
+                            Todas las empresas
+                          </button>
+                          {empresas.map((empresa) => (
+                            <button
+                              key={empresa.id}
+                              onClick={() => handleEmpresaSelect(empresa.id)}
+                              className={`block w-full text-left px-3 py-2 hover:bg-gray-100 ${
+                                filtros.empresa_id === empresa.id ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                              }`}
+                              title={empresa.nombre}
+                            >
+                              <span className="truncate block">{empresa.nombre}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Trimestre (Q)

@@ -3,6 +3,7 @@ import { Modal, Form, Input, Select, Button, message } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { obtenerDepartamentos, obtenerCargosPorDepartamento } from '../../services/departamentoService';
 import { obtenerRoles } from '../../services/rolService';
+import { obtenerEmpresas } from '../../services/empresaService';
 import { useUsers } from '../../context/UserContext';
 
 const { Option } = Select;
@@ -13,6 +14,7 @@ const CrearUsuarioModal = ({ open, onClose, onUserCreated }) => {
   const [departamentos, setDepartamentos] = useState([]);
   const [cargos, setCargos] = useState([]);
   const [roles, setRoles] = useState([]);
+  const [empresas, setEmpresas] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingCargos, setLoadingCargos] = useState(false);
 
@@ -25,21 +27,24 @@ const CrearUsuarioModal = ({ open, onClose, onUserCreated }) => {
       
       try {
         form.resetFields();
-        const [deptos, rolesData] = await Promise.all([
+        const [deptos, rolesData, empresasData] = await Promise.all([
           obtenerDepartamentos(),
-          obtenerRoles()
+          obtenerRoles(),
+          obtenerEmpresas()
         ]);
 
         if (!isMounted) return;
 
         setDepartamentos(Array.isArray(deptos) ? deptos : []);
         setRoles(Array.isArray(rolesData) ? rolesData : []);
+        setEmpresas(Array.isArray(empresasData) ? empresasData : []);
       } catch (error) {
         console.error('Error al cargar datos iniciales:', error);
         if (isMounted) {
-          message.error('No se pudieron cargar departamentos o roles');
+          message.error('No se pudieron cargar departamentos, roles o empresas');
           setDepartamentos([]);
           setRoles([]);
+          setEmpresas([]);
         }
       } finally {
         if (isMounted) {
@@ -54,6 +59,26 @@ const CrearUsuarioModal = ({ open, onClose, onUserCreated }) => {
 
     cargarMetadata();
   }, [open]);
+
+  const handleEmpresaChange = async (empresaId) => {
+    form.setFieldsValue({ departamento: undefined, cargo: undefined });
+    
+    if (!empresaId) {
+      setDepartamentos([]);
+      setCargos([]);
+      return;
+    }
+
+    try {
+      const deptos = await obtenerDepartamentos(empresaId);
+      setDepartamentos(Array.isArray(deptos) ? deptos : []);
+      setCargos([]);
+    } catch (error) {
+      console.error('Error al cargar departamentos:', error);
+      message.error('No se pudieron cargar los departamentos de la empresa');
+      setDepartamentos([]);
+    }
+  };
 
   const handleDepartamentoChange = async (departamentoId) => {
     form.setFieldsValue({ cargo: undefined });
@@ -82,7 +107,8 @@ const CrearUsuarioModal = ({ open, onClose, onUserCreated }) => {
         ...values,
         departamento_id: values.departamento,
         cargo_id: values.cargo,
-        rol_id: values.rol
+        rol_id: values.rol,
+        empresa_id: values.empresa
       };
       
       await addUser(payload);
@@ -90,7 +116,7 @@ const CrearUsuarioModal = ({ open, onClose, onUserCreated }) => {
       // Reset form first
       form.resetFields();
       
-      // Close the modal
+      // Close modal
       onClose();
       
       // Notify parent component
@@ -99,7 +125,6 @@ const CrearUsuarioModal = ({ open, onClose, onUserCreated }) => {
       }
     } catch (error) {
       console.error('Error al crear usuario:', error);
-      // No usar message ya que no está importado ni disponible
       console.error(error.response?.data?.message || 'Error al crear el usuario');
     } finally {
       setLoading(false);
@@ -157,74 +182,107 @@ const CrearUsuarioModal = ({ open, onClose, onUserCreated }) => {
           >
             <Input placeholder="usuario@empresa.com (opcional)" autoComplete="off" />
           </Form.Item>
+        </div>
 
-          <Form.Item
-            name="rol"
-            label="Rol"
-            rules={[{ required: true, message: 'Seleccione un rol' }]}
-          >
-            <Select placeholder="Seleccione un rol">
-              {roles.map((rol) => (
-                <Option key={rol.id} value={rol.id}>
-                  {rol.nombre.charAt(0).toUpperCase() + rol.nombre.slice(1)}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            name="departamento"
-            label="Departamento"
-            rules={[{ required: true, message: 'Seleccione un departamento' }]}
-          >
-            <Select
-              placeholder="Seleccione un departamento"
-              showSearch
-              optionFilterProp="children"
-              onChange={handleDepartamentoChange}
-              filterOption={(input, option) =>
-                (option?.children || '').toLowerCase().includes(input.toLowerCase())
-              }
+        {/* Título de asignación de procesos */}
+        <div className="mb-4">
+          <h4 className="text-sm font-medium text-gray-700 mb-3">Asignación de Procesos</h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Form.Item
+              name="rol"
+              label="Rol"
+              rules={[{ required: true, message: 'Seleccione un rol' }]}
             >
-              {departamentos.map((depto) => (
-                <Option key={depto.id} value={depto.id}>
-                  {depto.nombre}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
+              <Select placeholder="Seleccione un rol">
+                {roles.map((rol) => (
+                  <Option key={rol.id} value={rol.id}>
+                    {rol.nombre.charAt(0).toUpperCase() + rol.nombre.slice(1)}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
 
-          <Form.Item
-            name="cargo"
-            label="Cargo"
-            rules={[{ required: true, message: 'Seleccione un cargo' }]}
-          >
-            <Select
-              placeholder={loadingCargos ? 'Cargando cargos...' : 'Seleccione un cargo'}
-              disabled={!form.getFieldValue('departamento') || loadingCargos}
-              loading={loadingCargos}
-              showSearch
-              optionFilterProp="children"
-              filterOption={(input, option) =>
-                (option?.children || '').toLowerCase().includes(input.toLowerCase())
-              }
+            <Form.Item
+              name="empresa"
+              label="Empresa"
+              rules={[{ required: true, message: 'Seleccione una empresa' }]}
             >
-              {cargos.map((cargo) => (
-                <Option key={cargo.id} value={cargo.id}>
-                  {cargo.nombre}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
+              <Select
+                placeholder="Seleccione una empresa"
+                showSearch
+                optionFilterProp="children"
+                onChange={handleEmpresaChange}
+                filterOption={(input, option) =>
+                  (option?.children || '').toLowerCase().includes(input.toLowerCase())
+                }
+              >
+                {empresas.map((empresa) => (
+                  <Option key={empresa.id} value={empresa.id}>
+                    {empresa.nombre}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
 
-          <Form.Item
-            name="fecha_ingreso_empresa"
-            label="Fecha de ingreso a la empresa"
-            rules={[{ required: true, message: 'Seleccione la fecha de ingreso a la empresa' }]}
-          >
-            <Input type="date" placeholder="Seleccione la fecha" />
-          </Form.Item>
+            <Form.Item
+              name="departamento"
+              label="Departamento"
+              rules={[{ required: true, message: 'Seleccione un departamento' }]}
+            >
+              <Select
+                placeholder="Seleccione un departamento"
+                showSearch
+                optionFilterProp="children"
+                onChange={handleDepartamentoChange}
+                disabled={!form.getFieldValue('empresa')}
+                filterOption={(input, option) =>
+                  (option?.children || '').toLowerCase().includes(input.toLowerCase())
+                }
+              >
+                {departamentos.map((depto) => (
+                  <Option key={depto.id} value={depto.id}>
+                    {depto.nombre}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Form.Item
+              name="cargo"
+              label="Cargo"
+              rules={[{ required: true, message: 'Seleccione un cargo' }]}
+            >
+              <Select
+                placeholder={loadingCargos ? 'Cargando cargos...' : 'Seleccione un cargo'}
+                disabled={!form.getFieldValue('departamento') || loadingCargos}
+                loading={loadingCargos}
+                showSearch
+                optionFilterProp="children"
+                filterOption={(input, option) =>
+                  (option?.children || '').toLowerCase().includes(input.toLowerCase())
+                }
+              >
+                {cargos.map((cargo) => (
+                  <Option key={cargo.id} value={cargo.id}>
+                    {cargo.nombre}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+
+            <Form.Item
+              name="fecha_ingreso_empresa"
+              label="Fecha de ingreso a la empresa"
+              rules={[{ required: true, message: 'Seleccione la fecha de ingreso a la empresa' }]}
+            >
+              <Input type="date" placeholder="Seleccione la fecha" />
+            </Form.Item>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Form.Item
             name="password"
             label="Contraseña"

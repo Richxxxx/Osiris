@@ -335,17 +335,21 @@ const AdminDashboard = () => {
       title: 'Nombre',
       dataIndex: 'nombre',
       key: 'nombre',
+      width: 180,
       render: (text, record) => `${text} ${record.apellido || ''}`,
     },
     {
       title: 'Email',
       dataIndex: 'email',
       key: 'email',
+      width: 220,
+      ellipsis: true,
     },
     {
       title: 'Rol',
       dataIndex: ['rol', 'nombre'],
       key: 'rol',
+      width: 120,
       render: (rol) => {
         const colorMap = {
           'administrador': 'red',
@@ -363,13 +367,28 @@ const AdminDashboard = () => {
       title: 'Departamento',
       dataIndex: ['departamento', 'nombre'],
       key: 'departamento',
+      width: 140,
+      ellipsis: true,
+    },
+    {
+      title: 'Empresa',
+      dataIndex: ['empresa', 'nombre'],
+      key: 'empresa',
+      width: 120,
+      render: (empresa) => (
+        <Tag color="blue" style={{ fontSize: '12px' }}>
+          {empresa || 'Sin asignar'}
+        </Tag>
+      ),
     },
     {
       title: 'Estado',
       dataIndex: 'estado',
       key: 'estado',
+      width: 90,
+      align: 'center',
       render: (estado) => (
-        <Tag color={estado === 'activo' ? 'green' : 'red'}>
+        <Tag color={estado === 'activo' ? 'green' : 'red'} style={{ fontSize: '12px' }}>
           {estado}
         </Tag>
       ),
@@ -404,46 +423,56 @@ const AdminDashboard = () => {
       title: 'Nombre',
       dataIndex: 'nombre',
       key: 'nombre',
-      ellipsis: true,
       width: 200,
+      ellipsis: true,
     },
     {
-      title: 'Departamento/Proceso',
+      title: 'Departamento',
       key: 'departamento',
-      width: 180,
+      width: 140,
+      ellipsis: true,
       render: (text, record) => {
         if (record.cargos && record.cargos.length > 0) {
-          return record.cargos[0].departamento?.nombre || (
-            <span style={{ color: '#999', fontStyle: 'italic' }}>No asignado</span>
-          );
+          return record.cargos[0].departamento?.nombre || 'No asignado';
         }
-        return <span style={{ color: '#999', fontStyle: 'italic' }}>No asignado</span>;
+        return 'No asignado';
       },
     },
     {
       title: 'Cargo',
       key: 'cargo',
-      width: 180,
+      width: 140,
+      ellipsis: true,
       render: (text, record) => {
         if (record.cargos && record.cargos.length > 0) {
           return record.cargos[0].nombre;
         }
-        return <span style={{ color: '#999', fontStyle: 'italic' }}>No asignado</span>;
+        return 'No asignado';
       },
+    },
+    {
+      title: 'Empresa',
+      key: 'empresa',
+      width: 140,
+      ellipsis: true,
+      render: (text, record) => (
+        <Tag color="blue" style={{ fontSize: '12px' }}>
+          {record.empresa?.nombre || 'Sin asignar'}
+        </Tag>
+      ),
     },
     {
       title: 'Periodicidad',
       dataIndex: 'periodicidad',
       key: 'periodicidad',
-      width: 120,
+      width: 110,
       align: 'center',
       render: (periodicidad) => (
         <Tag 
           color={periodicidad === 'trimestral' ? 'blue' : 'purple'}
           style={{ 
             margin: 0,
-            minWidth: 80,
-            textAlign: 'center',
+            fontSize: '12px',
             textTransform: 'capitalize',
             fontWeight: 'bold'
           }}
@@ -456,16 +485,15 @@ const AdminDashboard = () => {
       title: 'Estado',
       dataIndex: 'estado',
       key: 'estado',
-      width: 120,
+      width: 90,
       align: 'center',
       render: (estado) => (
         <Tag 
           color={estado === 'activo' ? 'green' : 'red'}
           style={{ 
             margin: 0,
-            minWidth: 70,
-            textAlign: 'center',
-            textTransform: 'capitalize'
+            fontSize: '12px',
+            fontWeight: 'bold'
           }}
         >
           {estado}
@@ -474,16 +502,15 @@ const AdminDashboard = () => {
     },
     {
       title: 'Fecha Creación',
-      dataIndex: 'fechaInicio',
-      key: 'fechaInicio',
+      dataIndex: 'fecha_inicio',
+      key: 'fecha_inicio',
       width: 140,
       align: 'center',
       render: (fecha) => {
         if (!fecha) return '—';
-        // Crear fecha en UTC y mostrar en formato local sin conversión de zona horaria
-        const fechaUTC = new Date(fecha + 'Z'); // Agregar 'Z' para tratar como UTC
-        return fechaUTC.toLocaleDateString('es-ES', { 
-          timeZone: 'UTC',
+        // Formatear fecha DD/MM/YYYY
+        const fechaObj = new Date(fecha);
+        return fechaObj.toLocaleDateString('es-ES', { 
           year: 'numeric', 
           month: '2-digit', 
           day: '2-digit' 
@@ -634,14 +661,13 @@ const AdminDashboard = () => {
               title={
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                   <span>Gestión de Usuarios</span>
-                  <Space.Compact style={{ width: 300, marginLeft: 16 }}>
                   <Input.Search
                     placeholder="Buscar usuarios..."
                     value={filtroUsuarios}
                     onChange={handleFiltroChangeUsuarios}
                     allowClear
+                    style={{ width: 300, marginLeft: 16 }}
                   />
-                </Space.Compact>
                 </div>
               }
               extra={
@@ -659,6 +685,7 @@ const AdminDashboard = () => {
                 dataSource={filtrarUsuarios(users, filtroUsuarios)}
                 loading={loading}
                 rowKey="id"
+                size="small"
                 className="large-header-table"
                 onChange={handleTableChangeUsuarios}
                 pagination={{
@@ -685,14 +712,13 @@ const AdminDashboard = () => {
             title={
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                 <span>Lista de Formularios</span>
-                <Space.Compact style={{ width: 300, marginLeft: 16 }}>
-                  <Input.Search
-                    placeholder="Buscar formularios..."
-                    value={filtroFormularios}
-                    onChange={handleFiltroChange}
-                    allowClear
-                  />
-                </Space.Compact>
+                <Input.Search
+                  placeholder="Buscar formularios..."
+                  value={filtroFormularios}
+                  onChange={handleFiltroChange}
+                  allowClear
+                  style={{ width: 300, marginLeft: 16 }}
+                />
               </div>
             }
             extra={
@@ -710,6 +736,7 @@ const AdminDashboard = () => {
               dataSource={formulariosFiltrados}
               loading={loadingFormularios}
               rowKey="id"
+              size="small"
               className="large-header-table"
               onChange={handleTableChange}
               pagination={{
@@ -793,7 +820,7 @@ const AdminDashboard = () => {
 
       {showCrearFormulario && (
         <CrearFormulario
-          visible={showCrearFormulario}
+          open={showCrearFormulario}
           onClose={() => setShowCrearFormulario(false)}
           onSuccess={() => {
             setShowCrearFormulario(false);
@@ -807,7 +834,7 @@ const AdminDashboard = () => {
 
       {editingFormulario && (
         <EditarFormulario
-          visible={!!editingFormulario}
+          open={!!editingFormulario}
           formularioId={editingFormulario.id}
           onClose={() => setEditingFormulario(null)}
           onSuccess={() => {

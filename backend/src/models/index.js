@@ -72,6 +72,7 @@ fs.readdirSync(__dirname)
   });
 
 // Importar modelos en orden correcto para evitar dependencias circulares
+const Empresa = require('./empresa.model')(sequelize, DataTypes);
 const Rol = require('./rol.model')(sequelize, DataTypes);
 const Usuario = require('./usuario.model')(sequelize, DataTypes);
 const Departamento = require('./departamento.model')(sequelize, DataTypes);
@@ -83,6 +84,7 @@ const Evaluacion = require('./evaluacion.model')(sequelize, DataTypes);
 const Respuesta = require('./respuesta.model')(sequelize, DataTypes);
 
 // Asignar modelos al objeto db
+db.Empresa = Empresa;
 db.Rol = Rol;
 db.Usuario = Usuario;
 db.Departamento = Departamento;

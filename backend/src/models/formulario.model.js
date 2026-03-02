@@ -65,6 +65,12 @@ module.exports = (sequelize) => {
     },
     
     // Campos de relación (menos usados)
+    empresa_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true, // Permitir NULL para compatibilidad con datos existentes
+      field: 'empresa_id',
+      comment: 'Empresa a la que pertenece el formulario (principalmente para trimestrales)'
+    },
     creado_por: {
       type: DataTypes.INTEGER,
       allowNull: true,
@@ -88,6 +94,14 @@ module.exports = (sequelize) => {
 
   // Definir las asociaciones
   Formulario.associate = function(models) {
+    // Un formulario pertenece a una empresa
+    Formulario.belongsTo(models.Empresa, {
+      foreignKey: 'empresa_id',
+      as: 'empresa',
+      onDelete: 'RESTRICT',
+      onUpdate: 'CASCADE'
+    });
+
     // Un formulario puede tener muchas preguntas
     Formulario.hasMany(models.Pregunta, {
       foreignKey: 'formulario_id',

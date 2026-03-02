@@ -10,7 +10,6 @@ module.exports = (sequelize, DataTypes) => {
     nombre: {
       type: DataTypes.STRING,
       allowNull: false,
-      unique: true,
       validate: {
         notEmpty: true,
         len: [2, 255]
@@ -19,6 +18,12 @@ module.exports = (sequelize, DataTypes) => {
     descripcion: {
       type: DataTypes.TEXT,
       allowNull: true
+    },
+    empresa_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      field: 'empresa_id',
+      comment: 'Empresa a la que pertenece el cargo'
     },
     departamento_id: {
       type: DataTypes.INTEGER,
@@ -57,6 +62,14 @@ module.exports = (sequelize, DataTypes) => {
 
   // Definir las asociaciones
   Cargo.associate = function(models) {
+    // Un cargo pertenece a una empresa
+    Cargo.belongsTo(models.Empresa, {
+      foreignKey: 'empresa_id',
+      as: 'empresa',
+      onDelete: 'RESTRICT',
+      onUpdate: 'CASCADE'
+    });
+
     // Un cargo puede tener muchos usuarios
     Cargo.hasMany(models.Usuario, {
       foreignKey: 'cargo_id',

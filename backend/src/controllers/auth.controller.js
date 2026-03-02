@@ -529,7 +529,7 @@ exports.registro = async (req, res, next) => {
 
   try {
 
-    const { cedula, nombre, apellido, email, password, passwordConfirm, cargo, cargo_id, cargoId, rol_id, departamento_id, fecha_ingreso_empresa } = req.body;
+    const { cedula, nombre, apellido, email, password, passwordConfirm, cargo, cargo_id, cargoId, rol_id, departamento_id, fecha_ingreso_empresa, empresa_id } = req.body;
 
     // 1) Verificar si las contraseñas coinciden
     if (password !== passwordConfirm) {
@@ -572,6 +572,8 @@ exports.registro = async (req, res, next) => {
       rol_id,
 
       departamento_id,
+
+      empresa_id: empresa_id || null,
 
       fecha_ingreso_empresa: fechaIngresoFinal
 

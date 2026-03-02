@@ -60,10 +60,10 @@ module.exports = (sequelize) => {
       field: 'cargo_id',
       comment: 'Cargo o posición del usuario'
     },
-    empresa: {
-      type: DataTypes.STRING,
+    empresa_id: {
+      type: DataTypes.INTEGER,
       allowNull: true,
-      defaultValue: null,
+      field: 'empresa_id',
       comment: 'Empresa a la que pertenece el usuario'
     },
     
@@ -157,6 +157,13 @@ module.exports = (sequelize) => {
       foreignKey: 'cargo_id',
       as: 'cargo',
       onDelete: 'SET NULL',
+      onUpdate: 'CASCADE'
+    });
+    
+    Usuario.belongsTo(models.Empresa, {
+      foreignKey: 'empresa_id',
+      as: 'empresa',
+      onDelete: 'RESTRICT',
       onUpdate: 'CASCADE'
     });
   };

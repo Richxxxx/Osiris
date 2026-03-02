@@ -9,12 +9,17 @@ module.exports = (sequelize) => {
     },
     nombre: {
       type: DataTypes.STRING,
-      allowNull: false,
-      unique: true
+      allowNull: false
     },
     descripcion: {
       type: DataTypes.TEXT,
       allowNull: true
+    },
+    empresa_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      field: 'empresa_id',
+      comment: 'Empresa a la que pertenece el departamento'
     },
     estado: {
       type: DataTypes.BOOLEAN,
@@ -45,6 +50,13 @@ module.exports = (sequelize) => {
 
   // Asociaciones
   Departamento.associate = (models) => {
+    Departamento.belongsTo(models.Empresa, {
+      foreignKey: 'empresa_id',
+      as: 'empresa',
+      onDelete: 'RESTRICT',
+      onUpdate: 'CASCADE'
+    });
+    
     Departamento.hasMany(models.Usuario, {
       foreignKey: 'departamento_id',
       as: 'usuarios'
