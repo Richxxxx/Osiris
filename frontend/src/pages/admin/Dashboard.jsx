@@ -423,7 +423,7 @@ const AdminDashboard = () => {
       title: 'Nombre',
       dataIndex: 'nombre',
       key: 'nombre',
-      width: 200,
+      width: 180,
       ellipsis: true,
     },
     {
@@ -465,7 +465,7 @@ const AdminDashboard = () => {
       title: 'Periodicidad',
       dataIndex: 'periodicidad',
       key: 'periodicidad',
-      width: 110,
+      width: 120,
       align: 'center',
       render: (periodicidad) => (
         <Tag 

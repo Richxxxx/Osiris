@@ -185,7 +185,9 @@ const CrearFormulario = ({ open, onClose, onSuccess }) => {
       
       for (const apartado of apartados) {
         const response = await obtenerPreguntasExistentes(departamentoId, apartado);
-        preguntasPorApartado[apartado] = response.data?.preguntas || [];
+        // Convertir el objeto de preguntas a un array
+        const preguntasObj = response.data?.preguntas || {};
+        preguntasPorApartado[apartado] = Object.values(preguntasObj);
       }
       
       setPreguntasExistentes(preguntasPorApartado);
@@ -216,11 +218,11 @@ const CrearFormulario = ({ open, onClose, onSuccess }) => {
     // Agregar preguntas reutilizadas al estado local
     setPreguntas(prev => ({
       ...prev,
-      [activeTab]: [...prev[activeTab], ...preguntasReutilizadas.map(p => ({
+      [activeTab]: [...prev[activeTab], ...(Array.isArray(preguntasReutilizadas) ? preguntasReutilizadas.map(p => ({
         ...p,
         reutilizar: true,
         id: p.id // Mantener el ID original para referencia
-      }))]
+      })) : [])]
     }));
     
     // Limpiar selección
@@ -330,30 +332,30 @@ const CrearFormulario = ({ open, onClose, onSuccess }) => {
         
         // Combinar todas las preguntas de los diferentes apartados
         formulario.preguntas = [
-          ...preguntas.competencias.map(p => ({ 
+          ...(Array.isArray(preguntas.competencias) ? preguntas.competencias.map(p => ({ 
             ...p, 
             apartado: 'competencias',
             tipo: 'opcion_multiple',
             cargos: [cargoSeleccionado.id]
-          })),
-          ...preguntas.experiencia.map(p => ({ 
+          })) : []),
+          ...(Array.isArray(preguntas.experiencia) ? preguntas.experiencia.map(p => ({ 
             ...p, 
             apartado: 'experiencia',
             tipo: 'opcion_multiple',
             cargos: [cargoSeleccionado.id]
-          })),
-          ...preguntas.convivencia.map(p => ({ 
+          })) : []),
+          ...(Array.isArray(preguntas.convivencia) ? preguntas.convivencia.map(p => ({ 
             ...p, 
             apartado: 'convivencia',
             tipo: 'opcion_multiple',
             cargos: [cargoSeleccionado.id]
-          })),
-          ...preguntas.desempeno.map(p => ({ 
+          })) : []),
+          ...(Array.isArray(preguntas.desempeno) ? preguntas.desempeno.map(p => ({ 
             ...p, 
             apartado: 'desempeno',
             tipo: 'opcion_multiple',
             cargos: [cargoSeleccionado.id]
-          }))
+          })) : [])
         ];
 
         // Transformar opciones al formato esperado
@@ -361,10 +363,10 @@ const CrearFormulario = ({ open, onClose, onSuccess }) => {
           enunciado: pregunta.enunciado,
           apartado: pregunta.apartado,
           tipo: 'opcion_multiple',
-          opciones: pregunta.opciones.map(opcion => ({
+          opciones: Array.isArray(pregunta.opciones) ? pregunta.opciones.map(opcion => ({
             valor: opcion.texto || opcion.valor,
             puntuacion: parseInt(opcion.puntaje || opcion.puntuacion, 10)
-          })),
+          })) : [],
           obligatoria: pregunta.obligatoria,
           peso: pregunta.peso,
           ...(pregunta.reutilizar && { id: pregunta.id, reutilizar: true })
@@ -566,10 +568,10 @@ const CrearFormulario = ({ open, onClose, onSuccess }) => {
 
   const handlePreview = () => {
     const todasLasPreguntas = [
-      ...preguntas.competencias.map(p => ({ ...p, apartado: 'competencias' })),
-      ...preguntas.experiencia.map(p => ({ ...p, apartado: 'experiencia' })),
-      ...preguntas.convivencia.map(p => ({ ...p, apartado: 'convivencia' })),
-      ...preguntas.desempeno.map(p => ({ ...p, apartado: 'desempeno' }))
+      ...(Array.isArray(preguntas.competencias) ? preguntas.competencias.map(p => ({ ...p, apartado: 'competencias' })) : []),
+      ...(Array.isArray(preguntas.experiencia) ? preguntas.experiencia.map(p => ({ ...p, apartado: 'experiencia' })) : []),
+      ...(Array.isArray(preguntas.convivencia) ? preguntas.convivencia.map(p => ({ ...p, apartado: 'convivencia' })) : []),
+      ...(Array.isArray(preguntas.desempeno) ? preguntas.desempeno.map(p => ({ ...p, apartado: 'desempeno' })) : [])
     ];
 
     if (todasLasPreguntas.length === 0) {
@@ -747,7 +749,7 @@ const CrearFormulario = ({ open, onClose, onSuccess }) => {
               >
                 <List
                   itemLayout="vertical"
-                  dataSource={preguntasApartado}
+                  dataSource={Array.isArray(preguntasApartado) ? preguntasApartado : []}
                   renderItem={(pregunta, index) => (
                     <List.Item style={{ padding: '12px 0', borderBottom: '1px solid #f0f0f0' }}>
                       <div>
@@ -774,14 +776,14 @@ const CrearFormulario = ({ open, onClose, onSuccess }) => {
                             <div style={{ marginBottom: 4 }}>
                               <strong>Opciones:</strong>
                               <div style={{ marginTop: 4, marginLeft: 8 }}>
-                                {pregunta.opciones.map((opcion, idx) => (
+                                {Array.isArray(pregunta.opciones) ? pregunta.opciones.map((opcion, idx) => (
                                   <div key={idx} style={{ padding: '2px 0' }}>
                                     • {opcion.texto || opcion.valor} 
                                     <Tag color="blue" size="small" style={{ marginLeft: 4 }}>
                                       {opcion.puntaje || opcion.puntuacion} pts
                                     </Tag>
                                   </div>
-                                ))}
+                                )) : null}
                               </div>
                             </div>
                           )}
@@ -810,7 +812,7 @@ const CrearFormulario = ({ open, onClose, onSuccess }) => {
             >
               <List
                 itemLayout="horizontal"
-                dataSource={previewData.preguntas.filter(p => p.apartado === 'comentarios')}
+                dataSource={Array.isArray(previewData?.preguntas) ? previewData.preguntas.filter(p => p.apartado === 'comentarios') : []}
                 renderItem={(pregunta) => (
                   <List.Item>
                     <List.Item.Meta
@@ -961,11 +963,11 @@ const CrearFormulario = ({ open, onClose, onSuccess }) => {
                       onChange={handleEmpresaChange}
                       allowClear
                     >
-                      {empresas.map(empresa => (
+                      {Array.isArray(empresas) ? empresas.map(empresa => (
                         <Option key={empresa.id} value={empresa.id}>
                           {empresa.nombre}
                         </Option>
-                      ))}
+                      )) : null}
                     </Select>
                   </Form.Item>
                 </div>
@@ -983,11 +985,11 @@ const CrearFormulario = ({ open, onClose, onSuccess }) => {
                     allowClear
                     disabled={periodicidad === 'anual' && !form.getFieldValue('empresa_id')}
                   >
-                    {departamentos.map(depto => (
+                    {Array.isArray(departamentos) ? departamentos.map(depto => (
                       <Option key={depto.id} value={depto.id}>
                         {depto.nombre}
                       </Option>
-                    ))}
+                    )) : null}
                   </Select>
                 </Form.Item>
               </div>
@@ -1004,11 +1006,11 @@ const CrearFormulario = ({ open, onClose, onSuccess }) => {
                     allowClear
                     disabled={cargos.length === 0}
                   >
-                    {cargos.map(cargo => (
+                    {Array.isArray(cargos) ? cargos.map(cargo => (
                       <Option key={cargo.id} value={cargo.id}>
                         {cargo.nombre}
                       </Option>
-                    ))}
+                    )) : null}
                   </Select>
                 </Form.Item>
               </div>
@@ -1037,7 +1039,7 @@ const CrearFormulario = ({ open, onClose, onSuccess }) => {
                           </div>
                         ) : (
                           <List
-                            dataSource={preguntasExistentes[apartado]}
+                            dataSource={Array.isArray(preguntasExistentes[apartado]) ? preguntasExistentes[apartado] : []}
                             renderItem={(pregunta) => (
                               <List.Item
                                 actions={[
@@ -1078,7 +1080,7 @@ const CrearFormulario = ({ open, onClose, onSuccess }) => {
                     
                     <List
                       itemLayout="horizontal"
-                      dataSource={preguntas[apartado]}
+                      dataSource={Array.isArray(preguntas[apartado]) ? preguntas[apartado] : []}
                       renderItem={(pregunta, index) => (
                         <List.Item
                           actions={[
@@ -1101,7 +1103,7 @@ const CrearFormulario = ({ open, onClose, onSuccess }) => {
                               <div>
                                 <p><strong>Tipo:</strong> Opción múltiple</p>
                                 {pregunta.opciones && pregunta.opciones.length > 0 && (
-                                  <p><strong>Opciones:</strong> {pregunta.opciones.map(o => `${o.texto} (${o.puntaje} pts)`).join(', ')}</p>
+                                  <p><strong>Opciones:</strong> {Array.isArray(pregunta.opciones) ? pregunta.opciones.map(o => `${o.texto} (${o.puntaje} pts)`).join(', ') : ''}</p>
                                 )}
                                 <p><strong>Aplica a:</strong> {cargoSeleccionado?.nombre || 'Cargo seleccionado'}</p>
                               </div>
@@ -1133,11 +1135,11 @@ const CrearFormulario = ({ open, onClose, onSuccess }) => {
                   placeholder="Seleccione una empresa"
                   allowClear
                 >
-                  {empresas.map(empresa => (
+                  {Array.isArray(empresas) ? empresas.map(empresa => (
                     <Option key={empresa.id} value={empresa.id}>
                       {empresa.nombre}
                     </Option>
-                  ))}
+                  )) : null}
                 </Select>
               </Form.Item>
             </div>
@@ -1168,7 +1170,7 @@ const CrearFormulario = ({ open, onClose, onSuccess }) => {
               {seccionesTrimestral.length > 0 && (
                 <div>
                   <h4 style={{ marginBottom: '8px', fontSize: '14px' }}>Secciones creadas:</h4>
-                  {seccionesTrimestral.map(seccion => (
+                  {Array.isArray(seccionesTrimestral) ? seccionesTrimestral.map(seccion => (
                     <div key={seccion.id} style={{ 
                       display: 'flex', 
                       justifyContent: 'space-between', 
@@ -1187,7 +1189,7 @@ const CrearFormulario = ({ open, onClose, onSuccess }) => {
                         icon={<DeleteOutlined />}
                       />
                     </div>
-                  ))}
+                  )) : null}
                 </div>
               )}
             </Card>
@@ -1205,11 +1207,11 @@ const CrearFormulario = ({ open, onClose, onSuccess }) => {
                     style={{ marginBottom: '8px' }}
                   >
                     <Select placeholder="Seleccione una sección">
-                      {seccionesTrimestral.map(seccion => (
+                      {Array.isArray(seccionesTrimestral) ? seccionesTrimestral.map(seccion => (
                         <Option key={seccion.id} value={seccion.id}>
                           {seccion.nombre}
                         </Option>
-                      ))}
+                      )) : null}
                     </Select>
                   </Form.Item>
 
@@ -1241,7 +1243,7 @@ const CrearFormulario = ({ open, onClose, onSuccess }) => {
                 size="small"
                 style={{ marginTop: 16 }}
               >
-                {seccionesTrimestral.map(seccion => {
+                {Array.isArray(seccionesTrimestral) ? seccionesTrimestral.map(seccion => {
                   const preguntasDeSeccion = preguntasTrimestral.filter(p => p.seccionId === seccion.id);
                   if (preguntasDeSeccion.length === 0) return null;
                   
@@ -1260,7 +1262,7 @@ const CrearFormulario = ({ open, onClose, onSuccess }) => {
                         {seccion.nombre}
                       </h4>
                       
-                      {preguntasDeSeccion.map((pregunta, index) => (
+                      {Array.isArray(preguntasDeSeccion) ? preguntasDeSeccion.map((pregunta, index) => (
                         <div key={pregunta.id} style={{ 
                           marginLeft: '20px',
                           marginBottom: '12px',
@@ -1287,10 +1289,10 @@ const CrearFormulario = ({ open, onClose, onSuccess }) => {
                             />
                           </div>
                         </div>
-                      ))}
+                      )) : null}
                     </div>
                   );
-                })}
+                }) : null}
               </Card>
             )}
               </Card>

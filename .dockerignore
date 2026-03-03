@@ -1,0 +1,36 @@
+# Node.js
+node_modules
+npm-debug.log
+npm-error.log
+.git
+.gitignore
+README.md
+.env
+.nyc_output
+
+# React
+frontend/node_modules
+frontend/build
+frontend/dist
+
+# Logs
+logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Database
+*.sqlite
+*.db
+
+# Uploads
+uploads/
+temp/

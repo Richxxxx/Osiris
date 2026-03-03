@@ -73,15 +73,7 @@ module.exports = {
       END $$;
     `);
 
-    // 4. Insertamos los roles iniciales
-    await queryInterface.sequelize.query(`
-      INSERT INTO roles (nombre, descripcion, permisos, created_at, updated_at) VALUES 
-        ('administrador', 'Administrador del sistema con acceso completo', '{"ver_evaluaciones": true, "gestion_usuarios": true, "configurar_sistema": true}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-        ('evaluador', 'Líder que evalúa el desempeño de su equipo', '{"ver_evaluaciones": true, "crear_evaluaciones": true, "ver_reportes_propios": true}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-        ('empleado', 'Empleado que es evaluado por su líder', '{"ver_evaluaciones_propias": true, "responder_evaluaciones": true}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-        ('gestion', 'Personal de Recursos Humanos para gestión y seguimiento de evaluaciones', '{"ver_evaluaciones": true, "ver_reportes": true, "ver_estadisticas": true, "gestion_usuarios": false, "configurar_sistema": false, "ver_evaluaciones_lideres": true, "ver_progreso_departamentos": true}', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-      ON CONFLICT (nombre) DO NOTHING;
-    `);
+    // ✅ MOVIDO A SEEDER: No insertar datos en migración
   },
 
   down: async (queryInterface, Sequelize) => {

@@ -1,4 +1,9 @@
 import axios from '../utils/axiosConfig';
+import api from '../utils/axiosConfig';
+
+const extractCollection = (response = {}, key) => {
+  return response?.data?.data?.[key] ?? response?.data?.[key] ?? response?.data ?? [];
+};
 
 export const obtenerCargos = async () => {
   try {
@@ -10,12 +15,9 @@ export const obtenerCargos = async () => {
 };
 
 export const obtenerCargosPorDepartamento = async (departamentoId) => {
-  try {
-    const response = await axios.get(`/api/cargos/departamento/${departamentoId}`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+  if (!departamentoId) return [];
+  const response = await api.get(`/api/departamentos/${departamentoId}/cargos`);
+  return extractCollection(response, 'cargos');
 };
 
 export const crearCargo = async (cargo) => {
