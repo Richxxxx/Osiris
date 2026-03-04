@@ -28,23 +28,24 @@ services:
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: docker/dev/Dockerfile
     container_name: evaluaciones_backend
     environment:
-      NODE_ENV: production
-      PORT: 9092
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: ${PORT:-9092}
       # Conexión a base de datos dentro de Docker
       DB_HOST: postgres
-      DB_PORT: 5432
+      DB_PORT: ${DB_PORT:-5432}
       DB_USER: ${DB_USER:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD}
+      DB_PASSWORD: ${DB_PASSWORD:-Sol2025**}
       DB_NAME: ${DB_NAME:-EvaluacionesDesem}
-      JWT_SECRET: ${JWT_SECRET}
+      JWT_SECRET: ${JWT_SECRET:-tu_clave_secreta_muy_segura}
       CLIENT_URL: ${CLIENT_URL:-http://localhost:3000}
-      EMAIL_HOST: ${EMAIL_HOST}
-      EMAIL_PORT: ${EMAIL_PORT}
-      EMAIL_USER: ${EMAIL_USER}
-      EMAIL_PASS: ${EMAIL_PASS}
+      EMAIL_HOST: ${EMAIL_HOST:-smtp.zoho.com}
+      EMAIL_PORT: ${EMAIL_PORT:-587}
+      EMAIL_USER: ${EMAIL_USER:-desarrollo@solucionescorp.com.co}
+      EMAIL_PASS: ${EMAIL_PASS:-default_password}
+      EMAIL_FROM: ${EMAIL_FROM:-desarrollo@solucionescorp.com.co}
     volumes:
       - ./backend/logs:/app/logs
       - ./backend/uploads:/app/uploads
@@ -66,7 +67,7 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: docker/dev/Dockerfile
     container_name: evaluaciones_frontend
     ports:
       - "${FRONTEND_PORT:-80}:80"
@@ -77,7 +78,7 @@ services:
       - evaluaciones_network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      test: ["CMD", "curl", "-f", "http://localhost/"]
       interval: 30s
       timeout: 10s
       retries: 3
